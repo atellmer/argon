@@ -34,7 +34,7 @@ export type ComponentFactoryType = {
 	is: string;
 	isArgonComponent: boolean;
 	createInstance: () => ComponentType;
-	getComponentSymbol: () => Symbol;
+	getElementToken: () => Symbol;
 	config: {
 		pure: boolean;
 	},
@@ -79,7 +79,6 @@ function forceUpdate(instance: ComponentType, params = { beforeRender: () => {},
 
 function createComponent(def: ComponentDefType) {
 	const {
-		$$elementType,
 		$$id,
 		$$cache,
 		$$orderedIDList,
@@ -89,7 +88,7 @@ function createComponent(def: ComponentDefType) {
 		$$portal,
 		$$eventHandlers
 	} = constants;
-	const $$component = Symbol(def.displayName || 'component');
+	const $$elementToken = Symbol(def.displayName || 'default element token');
 	const config = def.config || { pure: false };
 	const reservedPropNames = {
 		'setState': true,
@@ -105,8 +104,6 @@ function createComponent(def: ComponentDefType) {
 	};
 	const reservedStaticPropNames = {};
 	class Component implements ComponentType {
-		static displayName = def.displayName;
-
 		state = getInitialState(def);
 		props = getDefaultProps(def);
 
@@ -190,14 +187,12 @@ function createComponent(def: ComponentDefType) {
 		}
 	}
 
-	Component[$$elementType] = $$component;
-
 	return (props: {} = {}) => {
 		const factory = {
 			isArgonComponent: true,
-			is: $$component.toString(),
+			is: $$elementToken.toString(),
 			createInstance: () => new Component(),
-			getComponentSymbol: () => $$component,
+			getElementToken: () => $$elementToken,
 			uid: 0,
 			config,
 			mountPortal: null,
@@ -205,7 +200,7 @@ function createComponent(def: ComponentDefType) {
 				...getDefaultProps(def),
 				...props
 			},
-		} as ComponentFactoryType
+		} as ComponentFactoryType;
 
 		return factory;
 	};
