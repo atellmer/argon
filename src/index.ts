@@ -1,24 +1,8 @@
 import {
-	dom,
-	findDOMNode,
 	createComponent,
-	renderComponent,
-	createPortal,
-	createContext,
-	createRef,
-	memo,
-	unmount
-} from './core/index';
+} from './core';
 
 
 export {
-	dom,
-	findDOMNode,
 	createComponent,
-	renderComponent,
-	createPortal,
-	createContext,
-	createRef,
-	memo,
-	unmount
 }

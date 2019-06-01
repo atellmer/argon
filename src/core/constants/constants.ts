@@ -1,0 +1,16 @@
+export const $$name = Symbol('name');
+export const $$prevState = Symbol('prevState');
+export const $$prevProps = Symbol('prevProps');
+export const $$cache = Symbol('cache');
+export const $$elementType = Symbol('elementType');
+export const $$isMounted = Symbol('isMounted');
+export const $$id = Symbol('id');
+export const $$uid = Symbol('uidApp');
+export const $$root = Symbol('root');
+export const $$DOMElement = Symbol('DOMElement');
+export const $$markedIDMap = Symbol('markedIDMap');
+export const $$orderedIDList = Symbol('orderedIDList');
+export const $$getComponentSymbol = Symbol('getComponentSymbol');
+export const $$portal = Symbol('portal');
+export const $$eventHandlers = Symbol('eventHandlers');
+export const $$ref = Symbol('ref');
