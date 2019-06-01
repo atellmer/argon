@@ -44,3 +44,16 @@ test(`[Component]: createInstance creates an instance correctly`, (t) => {
 
   t.end();
 });
+
+test(`[Component]: custom fields pass to instance correctly`, (t) => {
+	const Component = createComponent({
+		myCustomProp: true,
+		render() {
+			return null;
+		}
+	} as any);
+	const instance = Component().createInstance();
+
+	t.equal((instance as any).myCustomProp, true, 'has myCustomProp');
+  t.end();
+});

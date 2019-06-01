@@ -110,10 +110,10 @@ function createComponent(def: ComponentDefType) {
 		constructor() {
 			const mapDefKeys = (key: string) => {
 				if (isFunction(def[key])) {
-					!reservedPropNames[def[key].name] && (this[key] = def[key]);
-				} else {
-					!reservedStaticPropNames[key] && (this[key] = def[key]);
-				}
+					return !reservedPropNames[def[key].name] && (this[key] = def[key]);
+				} 
+				
+				!reservedStaticPropNames[key] && (this[key] = def[key]);
 			};
 
 			Object.keys(def).forEach(mapDefKeys);
