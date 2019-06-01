@@ -1,0 +1,36 @@
+{
+  "name": "argon",
+  "version": "1.0.0",
+  "description": "Seeneco rendering engine for javaScript applications",
+  "author": "Seeneco",
+  "main": "./lib/index.js",
+  "typings": "./index.d.ts",
+  "scripts": {
+    "start": "npm run dev",
+    "dev": "webpack-dev-server --config webpack.dev.config",
+    "build": "npm run build:dev && npm run build:prod",
+    "build:dev:watch": "webpack --config webpack.build.config --env.development --watch",
+    "build:dev": "webpack --config webpack.build.config --env.development",
+    "build:prod": "webpack --config webpack.build.config --env.production",
+    "test": "tape test/index.js | tap-notify | tap-difflet",
+    "test:watch": "tape-watch test/index.js -p tap-difflet",
+    "precommit": "npm test",
+    "prepush": "npm test"
+  },
+  "keywords": [],
+  "devDependencies": {
+    "husky": "^0.13.1",
+    "jsdom": "^15.0.0",
+    "jsdom-global": "^3.0.2",
+    "tap-difflet": "^0.7.1",
+    "tap-notify": "^1.0.0",
+    "tape": "^4.6.3",
+    "tape-watch": "^2.3.0",
+    "ts-loader": "^5.3.2",
+    "typescript": "^3.2.2",
+    "webpack": "4.21.0",
+    "webpack-cli": "^3.1.2",
+    "webpack-dev-server": "^3.1.14"
+  },
+  "dependencies": {}
+}

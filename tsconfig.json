@@ -1,0 +1,19 @@
+{
+	"compilerOptions": {
+		"target": "es5",
+		"moduleResolution": "node",
+		"module": "esnext",
+		"outDir": "./lib/",
+		"sourceMap": true,
+		"noImplicitAny": false,
+		"removeComments": false,
+		"downlevelIteration": true,
+		"lib": [
+			"es6",
+			"dom"
+		],
+	},
+	"include": [
+		"./src/**/*"
+	]
+}
