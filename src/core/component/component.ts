@@ -91,7 +91,7 @@ function createComponent(def: ComponentDefType) {
 	} = constants;
 	const $$component = Symbol(def.displayName || 'component');
 	const config = def.config || { pure: false };
-	const reservedMethodNamesMap = {
+	const reservedPropNames = {
 		'setState': true,
 		'forceUpdate': true,
 		'willMount': true,
@@ -103,6 +103,7 @@ function createComponent(def: ComponentDefType) {
 		'willUnmount': true,
 		'render': true
 	};
+	const reservedStaticPropNames = {};
 	class Component implements ComponentType {
 		static displayName = def.displayName;
 
@@ -112,9 +113,9 @@ function createComponent(def: ComponentDefType) {
 		constructor() {
 			const mapDefKeys = (key: string) => {
 				if (isFunction(def[key])) {
-					!reservedMethodNamesMap[def[key].name] && (this[key] = def[key]);
+					!reservedPropNames[def[key].name] && (this[key] = def[key]);
 				} else {
-					this[key] = def[key];
+					!reservedStaticPropNames[key] && (this[key] = def[key]);
 				}
 			};
 

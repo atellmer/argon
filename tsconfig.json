@@ -2,12 +2,13 @@
 	"compilerOptions": {
 		"target": "es5",
 		"moduleResolution": "node",
-		"module": "esnext",
+		"module": "commonjs",
 		"outDir": "./lib/",
 		"sourceMap": true,
 		"noImplicitAny": false,
 		"removeComments": false,
 		"downlevelIteration": true,
+		"allowJs": true,
 		"lib": [
 			"es6",
 			"dom"
