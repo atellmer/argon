@@ -36,6 +36,7 @@ import {
 	createCommentNode
 } from '../vdom';
 import { makeEvents } from '../../platform/browser/events';
+import { forceUpdate } from '../../platform/browser/dom';
 
 
 type ComponentDefType = {
@@ -118,10 +119,6 @@ function setComponentTree(uid: number, componentTree: ComponentTreeType) {
 	app.componentTree = { ...componentTree };
 };
 
-function forceUpdate(instance: ComponentType, params = { beforeRender: () => {}, afterRender: () => {} }) {
-	
-}
-
 function createComponent(def: ComponentDefType) {
 	const {
 		$$id,
@@ -155,6 +152,8 @@ function createComponent(def: ComponentDefType) {
 		constructor() {
 			const mapDefKeys = (key: string) => {
 				if (isFunction(def[key])) {
+					def[key] = def[key].bind(this);
+
 					return !reservedPropNames[def[key].name] && (this[key] = def[key]);
 				} 
 				

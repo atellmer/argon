@@ -1,6 +1,7 @@
 import {
 	ComponentTreeType,
 	ComponentFactoryType,
+	ComponentType,
 	getComponentTree,
 	unmountComponent,
 	getComponentId
@@ -8,7 +9,9 @@ import {
 import {
 	getUIDActive,
 	getRegistery,
-	getCurrentMountedComponentId
+	getCurrentMountedComponentId,
+	setCurrentMountedComponentId,
+	setUIDActive
 } from '../../../core/scope';
 import {
 	isObject,
@@ -23,6 +26,8 @@ import {
 	$$root,
 	$$eventHandlers,
 	$$markedIDMap,
+	$$id,
+	$$uid,
 	NODE_SEPARATOR,
 	NODE,
 	NODE_REPLACER,
@@ -325,6 +330,20 @@ function processDOM(id: string, uid: number, mountedVNode: VirtualNodeType = nul
 	instance[$$markedIDMap] = {};
 }
 
+function forceUpdate(instance: ComponentType, params = { beforeRender: () => {}, afterRender: () => {} }) {
+	const { beforeRender, afterRender } = params;
+	const id = instance[$$id];
+	const uid = instance[$$uid];
+
+	instance[$$markedIDMap] = {};
+	setCurrentMountedComponentId(id);
+	setUIDActive(instance[$$uid]);
+
+	beforeRender();
+	processDOM(id, uid);
+	afterRender();
+}
+
 
 export {
 	ElementReplacerType,
@@ -332,5 +351,6 @@ export {
 	mount,
 	getDOMElementRoute,
 	patchDOM,
-	processDOM
+	processDOM,
+	forceUpdate
 }
