@@ -1,24 +1,75 @@
-import { ComponentTreeType } from '../../../core/component';
-import { HashMap, VirtualNodeType } from '../../../core/shared';
+import {
+	ComponentTreeType,
+	ComponentFactoryType,
+	getComponentTree,
+	unmountComponent,
+	getComponentId
+} from '../../../core/component';
+import {
+	getUIDActive,
+	getRegistery,
+	getCurrentMountedComponentId
+} from '../../../core/scope';
+import {
+	isObject,
+	isEmpty,
+	isArray,
+	isVirtualNode,
+	isFunction,
+	isUndefined
+} from '../../../helpers';
+import { isRef } from '../../../core/ref';
+import {
+	$$root,
+	$$eventHandlers,
+	$$markedIDMap,
+	NODE_SEPARATOR,
+	NODE,
+	NODE_REPLACER,
+	NODE_LIST,
+	NODE_LIST_REPLACER,
+	COMPONENT,
+	COMPONENT_REPLACER,
+	COMPONENT_LIST,
+	COMPONENT_LIST_REPLACER,
+	EVENT_HANDLER_REPLACER,
+	EMPTY_REPLACER,
+	VDOM_ELEMENT_TYPES,
+	ATTR_REF,
+	ATTR_COMPONENT_ID,
+	ATTR_COMPONENT_NAME,
+	ATTR_KEY,
+	VDOM_ACTIONS
+} from '../../../core/constants';
+import {
+	VirtualNodeType,
+	VirtualDOMActionsType,
+	VirtualDOMDiffType,
+	ElementReplacerType,
+	createVirtualDOMFromSource,
+	mountVirtualDOM,
+	getVirtualDOM,
+	getComponentVirtualNodeById,
+	buildVirtualNodeWithRoutes,
+	setAttribute,
+	getVirtualDOMDiff
+} from '../../../core/vdom';
+import { makeEvents } from '../events';
 
 
-
-/*
 function dom(string: TemplateStringsArray, ...args: Array<any>) {
-	const uid = getUidActive();
+	const uid = getUIDActive();
 	const app = getRegistery().get(uid);
 	const separator = NODE_SEPARATOR;
 	const elements: Array<ElementReplacerType<any>> = [];
 	const componentTree: ComponentTreeType = getComponentTree(uid);
-	const id = getCurrMountedComponentId();
+	const id = getCurrentMountedComponentId();
 	let markup = string.join(separator);
 	let sourceVNode = null;
-	let vNode: VDOMNodeType = null;
-	let needSnapshot = false;
+	let vNode: VirtualNodeType = null;
 	const componentTreeNode = componentTree[id];
 	const instance = componentTreeNode.instance;
-	const isComponent = (o: ComponentFactoryType) => isObject(o) && !isEmpty(o) && (o as ComponentFactoryType).isSpiderComponent === true;
-
+	const isComponent = (o: ComponentFactoryType) => isObject(o) && !isEmpty(o) && (o as ComponentFactoryType).isStatefullComponent === true;
 	const mapArgsFn = (arg: any) => {
 		let replacer = '';
 
@@ -32,10 +83,10 @@ function dom(string: TemplateStringsArray, ...args: Array<any>) {
 			const componentFactoryList = arg.map(mapComponentsFn);
 			replacer = `<!--${COMPONENT_LIST_REPLACER}-->`;
 			elements.push({ type: COMPONENT_LIST, value: componentFactoryList });
-		} else if (isArray(arg) && isVDOMNode(arg[0])) {
+		} else if (isArray(arg) && isVirtualNode(arg[0])) {
 			replacer = `<!--${NODE_LIST_REPLACER}-->`;
 			elements.push({ type: NODE_LIST, value: arg  });
-		} else if (isVDOMNode(arg)) {
+		} else if (isVirtualNode(arg)) {
 			replacer = `<!--${NODE_REPLACER}-->`;
 			elements.push({ type: NODE, value: arg });
 		} else if (isFunction(arg)) {
@@ -65,36 +116,221 @@ function dom(string: TemplateStringsArray, ...args: Array<any>) {
 
 	sourceVNode = createVirtualDOMFromSource(markup);
 	sourceVNode = sourceVNode.length > 1 ? sourceVNode : sourceVNode[0];
-	needSnapshot = !Boolean(getAttribute(sourceVNode, ATTR_IS_NODE));
-
-	if (needSnapshot) {
-		componentTree[id] = {
-			...componentTree[id],
-			prevSnapshot: componentTree[id].snapshot || null
-		};
-		componentTree[id] = {
-			...componentTree[id],
-			snapshot: createSnapshot(sourceVNode, elements)
-		};
-		componentTree[id] = {
-			...componentTree[id],
-			snapshotDiff: getSnapshotDiff(componentTree[id].prevSnapshot, componentTree[id].snapshot)
-		};
-
-		setComponentTree(uid, componentTree);
-	} else {
-		removeAttribute(sourceVNode, ATTR_IS_NODE);
-	}
 
 	vNode = mountVirtualDOM(sourceVNode, elements);
 
-	const orderedIDList = vNode && vNode.children
-		? vNode.children
-				.map(n => getAttribute(n, ATTR_COMPONENT_ID))
-				.filter(Boolean)
-		: [];
-
-	componentTree[id].instance[$$orderedIDList] = orderedIDList;
-
 	return vNode;
-}*/
+}
+
+function mount(vdom: VirtualNodeType | Array<VirtualNodeType>, parentNode: HTMLElement = null): HTMLElement | Text | Comment {
+	let container: HTMLElement | Text | Comment = parentNode;
+	const uid = getUIDActive();
+	const mapVDOM = (vNode: VirtualNodeType) => {
+		if (!vNode) return;
+
+		if (vNode.type === VDOM_ELEMENT_TYPES.TAG) {
+			const DOMElement = document.createElement(vNode.name);
+			const mapAttrs = (attrName: string) => DOMElement.setAttribute(attrName, vNode.attrs[attrName]);
+
+			Object.keys(vNode.attrs).forEach(mapAttrs);
+
+			const refId = DOMElement.getAttribute(ATTR_REF);
+
+			if (parseInt(refId) >= 0) {
+				const refs = getRegistery().get(uid).refs;
+
+				if (refs[refId]) {
+					refs[refId](DOMElement);
+				};
+
+				DOMElement.removeAttribute(ATTR_REF);
+			}
+
+			if (container) {
+				container.appendChild(DOMElement);
+				!vNode.void && container.appendChild(mount(vNode.children, DOMElement));
+			} else {
+				container = DOMElement;
+				container = mount(vNode.children, container);
+			}
+		} else if (vNode.type === VDOM_ELEMENT_TYPES.TEXT) {
+			if (container) {
+				container.appendChild(document.createTextNode(vNode.content));
+			} else {
+				container = document.createTextNode(vNode.content);
+			}
+		} else if (vNode.type === VDOM_ELEMENT_TYPES.COMMENT) {
+			if (container) {
+				container.appendChild(document.createComment(vNode.content));
+			} else {
+				container = document.createComment(vNode.content);
+			}
+		}
+	}
+
+	if (isArray(vdom)) {
+		for(let vNode of vdom) {
+			mapVDOM(vNode);
+		}
+	} else {
+		mapVDOM(vdom as VirtualNodeType);
+	}
+
+	return container;
+}
+
+function getDOMElementRoute(sourceDOMElement: HTMLElement, targetDOMElement: HTMLElement, prevRoute: Array<number> = [], level: number = 0, idx: number = 0, stop: boolean = false): [Array<number>, boolean] {
+	const children = Array.from(sourceDOMElement.childNodes);
+	let route = [...prevRoute];
+
+	route[level] = idx;
+	level++;
+
+	if (targetDOMElement === sourceDOMElement) {
+		route = route.slice(0, level);
+
+		return [route, true];
+	}
+
+	for (let i = 0; i < children.length; i++) {
+		const childSourceDOMElement = sourceDOMElement.childNodes[i] as HTMLElement;
+		let [nextRoute, nextStop] = getDOMElementRoute(childSourceDOMElement, targetDOMElement, route, level, i, stop);
+
+		if (nextStop) return [nextRoute, nextStop];
+	}
+
+	return [route, stop];
+}
+
+
+function getNodeByRoute($parentNode: HTMLElement, action: VirtualDOMActionsType, route: Array<number> = []) {
+	let $node = $parentNode;
+	const mapRoute = (cIdx: number, idx: number, arr: Array<number>) => {
+		if (idx > 0) {
+			if ((action === VDOM_ACTIONS.ADD_NODE) && idx === arr.length - 1) return;
+
+			if (action === VDOM_ACTIONS.REMOVE_NODE) {
+				$node = ($node.childNodes[cIdx] || $node.childNodes[$node.childNodes.length - 1]) as HTMLElement;
+				return;
+			}
+
+			$node = $node.childNodes[cIdx] as HTMLElement;
+		}
+	};
+
+	route.forEach(mapRoute);
+
+	return $node;
+}
+
+function patchDOM(diff: Array<VirtualDOMDiffType>, $node: HTMLElement, uid: number, includePortals = false) {
+	const mapDiff = (diffElement: VirtualDOMDiffType) => {
+		if (includePortals) {
+			diffElement.route.unshift(0);
+		}
+
+		const node = getNodeByRoute($node, diffElement.action, diffElement.route);
+	
+		if (diffElement.action === VDOM_ACTIONS.ADD_NODE) {
+			const newNode = mount(diffElement.nextValue as VirtualNodeType);
+			node.appendChild(newNode);
+		} else if (diffElement.action === VDOM_ACTIONS.REMOVE_NODE) {
+			const componentId = getComponentId(diffElement.oldValue as VirtualNodeType);
+			componentId && unmountComponent(componentId, uid);
+			node.parentNode.removeChild(node);
+		} else if (diffElement.action === VDOM_ACTIONS.REPLACE_NODE) {
+			const newNode = mount(diffElement.nextValue as VirtualNodeType);
+			const componentId = getComponentId(diffElement.oldValue as VirtualNodeType);
+			componentId && unmountComponent(componentId, uid);
+			node.replaceWith(newNode);
+		} else if (diffElement.action === VDOM_ACTIONS.ADD_ATTRIBUTE) {
+			const mapAttrs = (attrName: string) => node.setAttribute(attrName, diffElement.nextValue[attrName]);
+			Object.keys(diffElement.nextValue).forEach(mapAttrs);
+		} else if (diffElement.action === VDOM_ACTIONS.REMOVE_ATTRIBUTE) {
+			const mapAttrs = (attrName: string) => node.removeAttribute(attrName);
+			Object.keys(diffElement.oldValue).forEach(mapAttrs);
+		} else if (diffElement.action === VDOM_ACTIONS.REPLACE_ATTRIBUTE) {
+			const mapAttrs = (attrName: string) => {
+				const value = diffElement.nextValue[attrName];
+
+				node.setAttribute(attrName, diffElement.nextValue[attrName]);
+
+				if (node.nodeName === 'INPUT') {
+					const input = node as HTMLInputElement;
+
+					if (input.type === 'text' && attrName === 'value') {
+						input.value = value;
+					} else if (input.type === 'checkbox' && attrName === 'checked') {
+						input.checked = value;
+					}
+				}
+			};
+
+			Object.keys(diffElement.nextValue).forEach(mapAttrs);
+		} 
+	};
+
+	diff.forEach(mapDiff);
+}
+
+
+function processDOM(id: string, uid: number, mountedVNode: VirtualNodeType = null, mountedNextVNode: VirtualNodeType = null, $container: HTMLElement = null, includePortals: boolean = false) {
+	const componentTree = getComponentTree(uid);
+	const vdom = getVirtualDOM(uid);
+	const componentTreeNode = componentTree[id];
+	const instance = componentTreeNode.instance;
+	const parentId = instance[$$root] ? null : componentTreeNode.parentId;
+	const app = getRegistery().get(uid);
+	const $node = $container || (instance[$$root]
+		? app.nativeElement.children[0] as HTMLElement
+		: app.nativeElement.querySelector(`[${ATTR_COMPONENT_ID}="${id}"]`) as HTMLElement);
+	const oldVNode = mountedVNode || getComponentVirtualNodeById(id, vdom);
+	const parentVNode = parentId ? getComponentVirtualNodeById(parentId, vdom) : null;
+	const findNodeFn = (vNode: VirtualNodeType) => vNode === oldVNode;
+	const idx = parentVNode ? parentVNode.children.findIndex(findNodeFn) : 0;
+
+	let newVNode = mountedNextVNode || instance.render();
+
+	app.queue.push(() => {
+		makeEvents(newVNode, id, uid);
+	});
+
+	const prevRoute = [...oldVNode.route];
+
+	newVNode = buildVirtualNodeWithRoutes(newVNode, prevRoute, prevRoute.length, 0, true);
+	app.queue.forEach(fn => fn());
+
+	app.queue = [];
+
+	if (newVNode.type === VDOM_ELEMENT_TYPES.TAG) {
+		setAttribute(newVNode, ATTR_COMPONENT_ID, id);
+		instance.displayName && setAttribute(newVNode, ATTR_COMPONENT_NAME, instance.displayName);
+		!isUndefined(instance.props.key) && setAttribute(newVNode, ATTR_KEY, instance.props.key);
+	}
+
+	const diff = getVirtualDOMDiff(oldVNode, newVNode, includePortals);
+
+	//console.log('[diff]', diff)
+
+	patchDOM(diff, $node, uid, includePortals);
+
+	if (!$container) {
+		if (parentVNode) {
+			idx > 0 && (parentVNode.children[idx] = newVNode);
+		} else {
+			app.vdom = newVNode;
+		}
+	}
+
+	instance[$$markedIDMap] = {};
+}
+
+
+export {
+	ElementReplacerType,
+	dom,
+	mount,
+	getDOMElementRoute,
+	patchDOM,
+	processDOM
+}

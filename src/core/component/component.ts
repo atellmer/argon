@@ -1,9 +1,44 @@
-import { HashMap, VirtualNodeType } from '../shared';
+import { HashMap } from '../shared';
 import * as constants from '../constants';
-import { isFunction, sanitize, error } from '../../helpers';
+const {
+	$$uid,
+	$$prevProps,
+	$$eventHandlers,
+	$$isMounted,
+	$$root,
+	$$id,
+	$$markedIDMap,
+	$$getComponentSymbol,
+	$$cache,
+	$$orderedIDList,
+	$$portal,
+	ATTR_COMPONENT_ID,
+	ATTR_KEY,
+	ATTR_COMPONENT_NAME,
+	ATTR_DONT_UPDATE_NODE,
+	ATTR_PORTAL_ID,
+	COMPONENT_REPLACER,
+	VDOM_ELEMENT_TYPES
+} = constants;
+import { isFunction, sanitize, error, isUndefined, isNull } from '../../helpers';
+import {
+	getRegistery,
+	getCurrentMountedComponentId,
+	setCurrentMountedComponentId
+} from '../scope';
+import {
+	VirtualNodeType,
+	getAttribute,
+	setAttribute,
+	getVirtualDOM,
+	getComponentVirtualNodeById,
+	buildVirtualNodeWithRoutes,
+	createCommentNode
+} from '../vdom';
+import { makeEvents } from '../../platform/browser/events';
 
 
-export type ComponentDefType = {
+type ComponentDefType = {
 	displayName?: string;
 	config?: {
 		pure?: boolean;
@@ -23,16 +58,16 @@ export type ComponentDefType = {
 	willUpdate?: (p, s) => void;
 	didUpdate?: (p, s) => void;
 	willUnmount?: () => void;
-}
+};
 
-export interface ComponentType extends ComponentDefType {
+interface ComponentType extends ComponentDefType {
 	setState?: (state, cb?) => void;
 	forceUpdate?: () => void;
 }
 
-export type ComponentFactoryType = {
+type ComponentFactoryType = {
 	is: string;
-	isArgonComponent: boolean;
+	isStatefullComponent: boolean;
 	createInstance: () => ComponentType;
 	getElementToken: () => Symbol;
 	config: {
@@ -45,9 +80,9 @@ export type ComponentFactoryType = {
 	};
 }
 
-export type ComponentTreeType = HashMap<ComponentTreeNodeType>;
+type ComponentTreeType = HashMap<ComponentNodeType>;
 
-export type ComponentTreeNodeType = {
+type ComponentNodeType = {
 	id: string;
 	instance: ComponentType;
 	childrenIdMap: HashMap<boolean>;
@@ -72,6 +107,16 @@ function getDefaultProps(def: ComponentDefType) {
 
 	return {};
 }
+
+function getComponentTree(uid: number): ComponentTreeType {
+	return { ...getRegistery().get(uid).componentTree };
+}
+
+function setComponentTree(uid: number, componentTree: ComponentTreeType) {
+	const app = getRegistery().get(uid);
+
+	app.componentTree = { ...componentTree };
+};
 
 function forceUpdate(instance: ComponentType, params = { beforeRender: () => {}, afterRender: () => {} }) {
 	
@@ -189,7 +234,7 @@ function createComponent(def: ComponentDefType) {
 
 	return (props: {} = {}) => {
 		const factory = {
-			isArgonComponent: true,
+			isStatefullComponent: true,
 			is: $$elementToken.toString(),
 			createInstance: () => new Component(),
 			getElementToken: () => $$elementToken,
@@ -206,7 +251,231 @@ function createComponent(def: ComponentDefType) {
 	};
 }
 
+function getComponentId(vNode: VirtualNodeType) {
+	let id = getAttribute(vNode, constants.ATTR_COMPONENT_ID);
+
+	if (id) return id;
+
+	if (!vNode.children) return null;
+
+	for(const childVNode of vNode.children) {
+		id = getComponentId(childVNode);
+	}
+
+	return id;
+}
+
+function makeComponentTree(instance: ComponentType, parentId: string | null) {
+	const componentTree = getComponentTree(instance[$$uid]);
+	const parentNode = parentId ? componentTree[parentId] : null;
+	const idx = parentNode && parentNode.lastChildId
+		? (+(parentNode.lastChildId.replace(parentId + '.', '')) + 1).toString()
+		: '0';
+	const id = instance[$$id] || (parentNode ? `${parentId}.${idx}` : '0');
+
+	if (id === '0' && componentTree[id] && componentTree[id].instance && componentTree[id].instance[$$isMounted]) {
+		return componentTree;
+	}
+
+	if (!componentTree[id]) {
+		instance[$$root] = !parentNode;
+		instance[$$id] = id;
+		componentTree[id] = {
+			id,
+			parentId,
+			childrenIdMap: {},
+			lastChildId: '',
+			instance
+		};
+	
+		if (parentNode && !parentNode.childrenIdMap[id]) {
+			parentNode.childrenIdMap[id] = true;
+			parentNode.lastChildId = id;
+		}
+	}
+
+	return componentTree;
+}
+
+function getPublicInstance(uid: number, key: any, componentFactory: ComponentFactoryType) {
+	return componentFactory.createInstance();
+}
+
+function wire(componentFactory: ComponentFactoryType): VirtualNodeType {
+	const uid = componentFactory.uid;
+	const app = getRegistery().get(uid);
+	const sanitizedProps = sanitize(componentFactory.props);
+	const { key, ref } = sanitizedProps;
+	const instance: ComponentType = getPublicInstance(uid, key, componentFactory);
+	let componentTree = null;
+	let vNode: VirtualNodeType = null;
+	let id = null;
+
+	instance[$$uid] = uid;
+	instance[$$prevProps] = { ...instance.props };
+	instance[$$eventHandlers] = [];
+
+	if (!instance[$$isMounted]) {
+		componentTree = makeComponentTree(instance, getCurrentMountedComponentId());
+		setComponentTree(uid, componentTree);
+		instance.willMount();
+	}
+
+	const setId = (instance: ComponentType) => {
+		if (!instance[$$root]) {
+			const id = instance[$$id].split('.').slice(0, -1).join('.');
+	
+			setCurrentMountedComponentId(id);
+		}
+	};
+	const reduceProps = (acc, key) => (acc[key] = sanitizedProps[key], acc);
+	const getProps = () => Object.keys(sanitizedProps).reduce(reduceProps, instance.props);
+
+	id = instance[$$id];
+	setCurrentMountedComponentId(id);
+
+	if (instance[$$isMounted] && !instance.shouldUpdate(sanitizedProps, instance.state)) {
+		const vdom = getVirtualDOM(uid);
+		const vNode = getComponentVirtualNodeById(id, vdom);
+
+		setAttribute(vNode, ATTR_DONT_UPDATE_NODE, true);
+		instance[$$markedIDMap] = {};
+		setId(instance);
+
+		return vNode;
+	}
+
+	instance.props = getProps();
+	instance.willReceiveProps(instance.props);
+	instance.willUpdate(instance.props, instance.state);
+
+	vNode = instance.render();
+
+	if (isUndefined(vNode)) {
+		error('render method must return dom`` content or null!');
+		return null;
+	}
+
+	if (isNull(vNode)) {
+		vNode = createCommentNode(`${COMPONENT_REPLACER}:${id}${Boolean(instance.displayName) ? `:${instance.displayName}` : ''}`);
+	}
+
+	app.queue.push(() => {
+		makeEvents(vNode, id, uid);
+	});
+
+	if (instance[$$root]) {
+		vNode = buildVirtualNodeWithRoutes(vNode);
+		app.queue.forEach(fn => fn());
+		app.queue = [];
+	}
+
+	if (vNode.type === VDOM_ELEMENT_TYPES.TAG) {
+		setAttribute(vNode, ATTR_COMPONENT_ID, id);
+		!isUndefined(key) && setAttribute(vNode, ATTR_KEY, key);
+		instance.displayName && setAttribute(vNode, ATTR_COMPONENT_NAME, instance.displayName);
+	}
+
+	const didUpdateTimeout = setTimeout(() => {
+		clearTimeout(didUpdateTimeout);
+		instance.didUpdate({ ...instance[$$prevProps] }, instance.state);
+	});
+
+	if (!instance[$$isMounted]) {
+		const didMountTimeout = setTimeout(() => {
+			clearTimeout(didMountTimeout);
+			instance.didMount();
+			instance[$$isMounted] = true;
+		});
+	}
+
+	instance[$$markedIDMap] = {};
+	setId(instance);
+	ref && ref(instance);
+
+	vNode.props = instance.props;
+
+	//setTimeout(() => console.log('componentTree', getComponentTree(uid)))
+
+	return vNode;
+}
+
+function unmountComponent(id: string, uid: number, parentInstance = null) {
+	const app = getRegistery().get(uid);
+	const componentTree = getComponentTree(uid);
+	const vDOMNode = componentTree[id];
+	const instance = vDOMNode.instance;
+	const elementType = instance[$$getComponentSymbol]();
+	let componentCache = null;
+	let parentVDOMNode = null;
+
+	instance.props.ref && instance.props.ref(null);
+	parentInstance = parentInstance || componentTree[vDOMNode.parentId].instance;
+	parentVDOMNode = componentTree[parentInstance[$$id]];
+	componentCache = parentInstance[$$cache].get(elementType);
+
+	delete componentTree[id];
+	setComponentTree(uid, componentTree);
+
+	const mapCacheFn = (comparedInstance, key) => {
+		if (comparedInstance === instance) {
+			const idx = parentInstance[$$orderedIDList].findIndex(cid => cid === id);
+
+			componentCache.delete(key);
+			parentInstance[$$orderedIDList].splice(idx, 1);
+		}
+	};
+	const mapComponentsFn = (id: string) => unmountComponent(id, uid, instance);
+
+	componentCache.forEach(mapCacheFn);
+	parentInstance[$$cache].set(elementType, componentCache);
+	Object.keys(vDOMNode.childrenIdMap).forEach(mapComponentsFn);
+
+	if (parentVDOMNode) {
+		delete parentVDOMNode.childrenIdMap[id];
+	}
+
+	instance.willUnmount();
+
+	const mapHandlersFn = (key: string) => {
+		const comparedId = key.split(':')[0];
+
+		if (comparedId === id) {
+			const mapEventsFn = (eventName: string) => app.eventHandlers[key][eventName].removeEvent();
+			Object.keys(app.eventHandlers[key]).forEach(mapEventsFn);
+			delete app.eventHandlers[key];
+		}
+	};
+	Object.keys(app.eventHandlers).forEach(mapHandlersFn);
+
+	if (instance[$$portal]) {
+		const portalId = `${instance[$$uid]}:${id}`;
+		const $portalContainer = document.querySelector(`[${ATTR_PORTAL_ID}="${portalId}"]`);
+
+		if ($portalContainer) {
+			if ($portalContainer.parentElement !== document.body) {
+				$portalContainer.removeAttribute(ATTR_PORTAL_ID);
+				$portalContainer.innerHTML = '';
+			} else {
+				$portalContainer.parentElement.removeChild($portalContainer);
+			}
+		} 
+	}
+
+	getRegistery().set(uid, app);
+}
+
 
 export {
-	createComponent
+	ComponentDefType,
+	ComponentType,
+	ComponentFactoryType,
+	ComponentTreeType,
+	ComponentNodeType,
+	createComponent,
+	getComponentTree,
+	getComponentId,
+	wire,
+	getPublicInstance,
+	unmountComponent
 }

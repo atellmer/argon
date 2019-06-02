@@ -3,10 +3,11 @@ import * as Argon from '../src';
 
 const App = Argon.createComponent({
 	displayName: 'App',
-	customProp: () => {},
 	render() {
-		return null;
+		return Argon.dom`
+			<div>Hello Argon</div>
+		`;
 	}
 });
 
-console.log('App:', App().createInstance());
+Argon.renderComponent(App(), document.getElementById('app'));

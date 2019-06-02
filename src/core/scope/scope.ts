@@ -1,8 +1,9 @@
-import { HashMap, VirtualNodeType } from '../shared';
+import { HashMap } from '../shared';
 import { ComponentTreeType } from '../component';
+import { VirtualNodeType } from '../vdom';
 
 
-export type ScopeType = {
+type ScopeType = {
 	registery: Map<number, AppType>;
 	uid: {
 		mounted: number;
@@ -11,7 +12,7 @@ export type ScopeType = {
 	currentMountedComponentId: string | null;
 }
 
-export type AppType = {
+type AppType = {
 	nativeElement: HTMLElement;
 	componentTree: ComponentTreeType;
 	vdom: VirtualNodeType,
@@ -44,8 +45,21 @@ function createScope(): ScopeType {
 	};
 }
 
+function createApp(nativeElement: HTMLElement): AppType {
+	return {
+		nativeElement,
+		componentTree: {},
+		vdom: null,
+		eventHandlers: {},
+		refs: [],
+		queue: []
+	}
+}
+
 
 export {
+	ScopeType,
+	AppType,
 	getRegistery,
 	setRegistery,
 	getUIDMounted,
@@ -54,5 +68,6 @@ export {
 	setUIDActive,
 	getCurrentMountedComponentId,
 	setCurrentMountedComponentId,
-	createScope
+	createScope,
+	createApp
 }

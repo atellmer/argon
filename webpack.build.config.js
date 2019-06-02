@@ -9,7 +9,11 @@ const config = (env) => ({
 	},
 	resolve: {
 		modules: ['node_modules'],
-		extensions: ['.js', '.ts']
+		extensions: ['.js', '.ts'],
+		alias: {
+			'core': path.resolve(__dirname, './src/core'),
+			'platform': path.resolve(__dirname, './src/platform'),
+		}
 	},
 	entry: path.resolve(__dirname, 'src/index.ts'),
 	output: {

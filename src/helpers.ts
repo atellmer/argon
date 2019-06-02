@@ -72,7 +72,7 @@ function isDOMElement(element) {
 	return element instanceof Element || element instanceof HTMLDocument;  
 }
 
-function isVDOMNode(node: any) {
+function isVirtualNode(node: any) {
 	return typeof node === 'object' &&  node.isVNode === true; 
 }
 
@@ -104,6 +104,6 @@ export {
 	sanitize,
 	error,
 	isDOMElement,
-	isVDOMNode,
+	isVirtualNode,
 	deepClone
 }

@@ -4,7 +4,11 @@ const config = {
 	mode: 'development',
 	resolve: {
 		modules: ['node_modules'],
-		extensions: ['.js', '.ts']
+		extensions: ['.js', '.ts'],
+		alias: {
+			'core': path.resolve(__dirname, './src/core'),
+			'platform': path.resolve(__dirname, './src/platform'),
+		}
 	},
 	devtool: 'source-map',
 	entry: path.resolve(__dirname, 'app/index.ts'),

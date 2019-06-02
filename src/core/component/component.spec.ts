@@ -23,7 +23,7 @@ test(`[Component]: createComponent returns factory`, (t) => {
 	});
 
 	t.equal(typeof Component(), 'object', 'value is object');
-	t.equal(Component().isArgonComponent, true, 'is argon component');
+	t.equal(Component().isStatefullComponent, true, 'is argon component');
 
   t.end();
 });
