@@ -66,7 +66,7 @@ interface ComponentType extends ComponentDefType {
 	forceUpdate?: () => void;
 }
 
-type ComponentFactoryType = {
+type StatefullComponentFactoryType = {
 	is: string;
 	isStatefullComponent: boolean;
 	createInstance: () => ComponentType;
@@ -76,6 +76,17 @@ type ComponentFactoryType = {
 	},
 	mountPortal: (id: string, nextVNode: VirtualNodeType) => void | null;
 	uid: number;
+	props: {
+		ref?: any;
+		key?: any;
+	};
+}
+
+type StatelessComponentFactoryType =  {
+	is: string
+	isStatelessComponent: boolean;
+	createElement: () => VirtualNodeType,
+	uid: number,
 	props: {
 		key?: any;
 	};
@@ -119,7 +130,9 @@ function setComponentTree(uid: number, componentTree: ComponentTreeType) {
 	app.componentTree = { ...componentTree };
 };
 
-function createComponent(def: ComponentDefType) {
+function createComponent(defObj: ComponentDefType | Function) {
+	const def = defObj as ComponentDefType;
+	
 	const {
 		$$id,
 		$$cache,
@@ -232,21 +245,37 @@ function createComponent(def: ComponentDefType) {
 	}
 
 	return (props: {} = {}) => {
-		const factory = {
-			isStatefullComponent: true,
-			is: $$elementToken.toString(),
-			createInstance: () => new Component(),
-			getElementToken: () => $$elementToken,
-			uid: 0,
-			config,
-			mountPortal: null,
-			props: {
-				...getDefaultProps(def),
-				...props
-			},
-		} as ComponentFactoryType;
+		const resolveFactory = (def) => {
+			const statefullFactory = {
+				isStatefullComponent: true,
+				is: $$elementToken.toString(),
+				createInstance: () => new Component(),
+				getElementToken: () => $$elementToken,
+				uid: 0,
+				config,
+				mountPortal: null,
+				props: {
+					...getDefaultProps(def),
+					...props
+				},
+			} as StatefullComponentFactoryType;
+	
+			const statelessFatory = {
+				isStatelessComponent: true,
+				is: $$elementToken.toString(),
+				createElement: () => def(props),
+				uid: 0,
+				props: {
+					...getDefaultProps(def),
+					...props
+				}
+			} as StatelessComponentFactoryType;
 
-		return factory;
+			return isFunction(def) ? statelessFatory : statefullFactory;
+		}
+		
+
+		return resolveFactory(def);
 	};
 }
 
@@ -296,11 +325,11 @@ function makeComponentTree(instance: ComponentType, parentId: string | null) {
 	return componentTree;
 }
 
-function getPublicInstance(uid: number, key: any, componentFactory: ComponentFactoryType) {
+function getPublicInstance(uid: number, key: any, componentFactory: StatefullComponentFactoryType) {
 	return componentFactory.createInstance();
 }
 
-function wire(componentFactory: ComponentFactoryType): VirtualNodeType {
+function wire(componentFactory: StatefullComponentFactoryType): VirtualNodeType {
 	const uid = componentFactory.uid;
 	const app = getRegistery().get(uid);
 	const sanitizedProps = sanitize(componentFactory.props);
@@ -468,7 +497,8 @@ function unmountComponent(id: string, uid: number, parentInstance = null) {
 export {
 	ComponentDefType,
 	ComponentType,
-	ComponentFactoryType,
+	StatefullComponentFactoryType,
+	StatelessComponentFactoryType,
 	ComponentTreeType,
 	ComponentNodeType,
 	createComponent,

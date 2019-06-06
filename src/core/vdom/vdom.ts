@@ -41,7 +41,7 @@ type VirtualDOMDiffType = {
 }
 
 type ElementReplacerType<T> = {
-	type: 'NODE' | 'NODE_LIST' | 'COMPONENT' | 'COMPONENT_LIST';
+	type: 'NODE' | 'NODE_LIST' | 'COMPONENT' | 'COMPONENT_LIST' | 'STATELESS_COMPONENT';
 	value: T;
 }
 

@@ -1,6 +1,7 @@
 import {
 	ComponentTreeType,
-	ComponentFactoryType,
+	StatefullComponentFactoryType,
+	StatelessComponentFactoryType,
 	ComponentType,
 	getComponentTree,
 	unmountComponent,
@@ -37,6 +38,8 @@ import {
 	COMPONENT_REPLACER,
 	COMPONENT_LIST,
 	COMPONENT_LIST_REPLACER,
+	STATELESS_COMPONENT,
+	STATELESS_COMPONENT_REPLACER,
 	EVENT_HANDLER_REPLACER,
 	EMPTY_REPLACER,
 	VDOM_ELEMENT_TYPES,
@@ -74,17 +77,23 @@ function dom(string: TemplateStringsArray, ...args: Array<any>) {
 	let vNode: VirtualNodeType = null;
 	const componentTreeNode = componentTree[id];
 	const instance = componentTreeNode.instance;
-	const isComponent = (o: ComponentFactoryType) => isObject(o) && !isEmpty(o) && (o as ComponentFactoryType).isStatefullComponent === true;
+	const isStatefullComponent = (o: StatefullComponentFactoryType) => isObject(o) && !isEmpty(o) && (o as StatefullComponentFactoryType).isStatefullComponent === true;
+	const isStatelessComponent = (o: StatelessComponentFactoryType) => isObject(o) && !isEmpty(o) && (o as StatelessComponentFactoryType).isStatelessComponent === true;
 	const mapArgsFn = (arg: any) => {
 		let replacer = '';
 
-		if (isComponent(arg)) {
-			const componentFactory = arg as ComponentFactoryType;
+		if (isStatefullComponent(arg)) {
+			const componentFactory = arg as StatefullComponentFactoryType;
 			replacer = `<!--${COMPONENT_REPLACER}-->`;
 			componentFactory.uid = uid;
 			elements.push({ type: COMPONENT, value: componentFactory });
-		} else if (isArray(arg) && isComponent(arg[0])) {
-			const mapComponentsFn = (o: ComponentFactoryType) => (o.uid = uid, o);
+		} else if (isStatelessComponent(arg)) {
+			const statelessComponentFactory = arg as StatelessComponentFactoryType;
+			replacer = `<!--${STATELESS_COMPONENT_REPLACER}-->`;
+			statelessComponentFactory.uid = uid;
+			elements.push({ type: STATELESS_COMPONENT, value: statelessComponentFactory });
+		} else if (isArray(arg) && isStatefullComponent(arg[0])) {
+			const mapComponentsFn = (o: StatefullComponentFactoryType) => (o.uid = uid, o);
 			const componentFactoryList = arg.map(mapComponentsFn);
 			replacer = `<!--${COMPONENT_LIST_REPLACER}-->`;
 			elements.push({ type: COMPONENT_LIST, value: componentFactoryList });
