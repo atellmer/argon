@@ -17,7 +17,7 @@ const {
 	ATTR_COMPONENT_NAME,
 	ATTR_DONT_UPDATE_NODE,
 	ATTR_PORTAL_ID,
-	COMPONENT_REPLACER,
+	STATEFULL_COMPONENT_REPLACER,
 	VDOM_ELEMENT_TYPES
 } = constants;
 import { isFunction, sanitize, error, isUndefined, isNull } from '../../helpers';
@@ -385,7 +385,7 @@ function wire(componentFactory: StatefullComponentFactoryType): VirtualNodeType 
 	}
 
 	if (isNull(vNode)) {
-		vNode = createCommentNode(`${COMPONENT_REPLACER}:${id}${Boolean(instance.displayName) ? `:${instance.displayName}` : ''}`);
+		vNode = createCommentNode(`${STATEFULL_COMPONENT_REPLACER}:${id}${Boolean(instance.displayName) ? `:${instance.displayName}` : ''}`);
 	}
 
 	app.queue.push(() => {

@@ -18,7 +18,6 @@ import {
 	isObject,
 	isEmpty,
 	isArray,
-	isVirtualNode,
 	isFunction,
 	isUndefined
 } from '../../../helpers';
@@ -34,12 +33,14 @@ import {
 	NODE_REPLACER,
 	NODE_LIST,
 	NODE_LIST_REPLACER,
-	COMPONENT,
-	COMPONENT_REPLACER,
-	COMPONENT_LIST,
-	COMPONENT_LIST_REPLACER,
+	STATEFULL_COMPONENT,
+	STATEFULL_COMPONENT_REPLACER,
+	STATEFULL_COMPONENT_LIST,
+	STATEFULL_COMPONENT_LIST_REPLACER,
 	STATELESS_COMPONENT,
 	STATELESS_COMPONENT_REPLACER,
+	STATELESS_COMPONENT_LIST,
+	STATELESS_COMPONENT_LIST_REPLACER,
 	EVENT_HANDLER_REPLACER,
 	EMPTY_REPLACER,
 	VDOM_ELEMENT_TYPES,
@@ -60,7 +61,8 @@ import {
 	getComponentVirtualNodeById,
 	buildVirtualNodeWithRoutes,
 	setAttribute,
-	getVirtualDOMDiff
+	getVirtualDOMDiff,
+	isVirtualNode
 } from '../../../core/vdom';
 import { makeEvents } from '../events';
 
@@ -79,30 +81,36 @@ function dom(string: TemplateStringsArray, ...args: Array<any>) {
 	const instance = componentTreeNode.instance;
 	const isStatefullComponent = (o: StatefullComponentFactoryType) => isObject(o) && !isEmpty(o) && (o as StatefullComponentFactoryType).isStatefullComponent === true;
 	const isStatelessComponent = (o: StatelessComponentFactoryType) => isObject(o) && !isEmpty(o) && (o as StatelessComponentFactoryType).isStatelessComponent === true;
+	
 	const mapArgsFn = (arg: any) => {
 		let replacer = '';
 
 		if (isStatefullComponent(arg)) {
 			const componentFactory = arg as StatefullComponentFactoryType;
-			replacer = `<!--${COMPONENT_REPLACER}-->`;
+			replacer = `<!--${STATEFULL_COMPONENT_REPLACER}-->`;
 			componentFactory.uid = uid;
-			elements.push({ type: COMPONENT, value: componentFactory });
-		} else if (isStatelessComponent(arg)) {
-			const statelessComponentFactory = arg as StatelessComponentFactoryType;
-			replacer = `<!--${STATELESS_COMPONENT_REPLACER}-->`;
-			statelessComponentFactory.uid = uid;
-			elements.push({ type: STATELESS_COMPONENT, value: statelessComponentFactory });
+			elements.push({ type: STATEFULL_COMPONENT, value: componentFactory });
 		} else if (isArray(arg) && isStatefullComponent(arg[0])) {
 			const mapComponentsFn = (o: StatefullComponentFactoryType) => (o.uid = uid, o);
 			const componentFactoryList = arg.map(mapComponentsFn);
-			replacer = `<!--${COMPONENT_LIST_REPLACER}-->`;
-			elements.push({ type: COMPONENT_LIST, value: componentFactoryList });
-		} else if (isArray(arg) && isVirtualNode(arg[0])) {
-			replacer = `<!--${NODE_LIST_REPLACER}-->`;
-			elements.push({ type: NODE_LIST, value: arg  });
+			replacer = `<!--${STATEFULL_COMPONENT_LIST_REPLACER}-->`;
+			elements.push({ type: STATEFULL_COMPONENT_LIST, value: componentFactoryList });
+		} else if (isStatelessComponent(arg)) {
+			const componentFactory = arg as StatelessComponentFactoryType;
+			replacer = `<!--${STATELESS_COMPONENT_REPLACER}-->`;
+			componentFactory.uid = uid;
+			elements.push({ type: STATELESS_COMPONENT, value: componentFactory });
+		} else if (isArray(arg) && isStatelessComponent(arg[0])) {
+			const mapComponentsFn = (o: StatelessComponentFactoryType) => (o.uid = uid, o);
+			const componentFactoryList = arg.map(mapComponentsFn);
+			replacer = `<!--${STATELESS_COMPONENT_LIST_REPLACER}-->`;
+			elements.push({ type: STATELESS_COMPONENT_LIST, value: componentFactoryList });
 		} else if (isVirtualNode(arg)) {
 			replacer = `<!--${NODE_REPLACER}-->`;
 			elements.push({ type: NODE, value: arg });
+		} else if (isArray(arg) && isVirtualNode(arg[0])) {
+			replacer = `<!--${NODE_LIST_REPLACER}-->`;
+			elements.push({ type: NODE_LIST, value: arg  });
 		} else if (isFunction(arg)) {
 			if (!isRef(arg)) {
 				replacer = EVENT_HANDLER_REPLACER;
@@ -244,7 +252,7 @@ function patchDOM(diff: Array<VirtualDOMDiffType>, $node: HTMLElement, uid: numb
 		}
 
 		const node = getNodeByRoute($node, diffElement.action, diffElement.route);
-	
+
 		if (diffElement.action === VDOM_ACTIONS.ADD_NODE) {
 			const newNode = mount(diffElement.nextValue as VirtualNodeType);
 			node.appendChild(newNode);
@@ -286,7 +294,6 @@ function patchDOM(diff: Array<VirtualDOMDiffType>, $node: HTMLElement, uid: numb
 
 	diff.forEach(mapDiff);
 }
-
 
 function processDOM(id: string, uid: number, mountedVNode: VirtualNodeType = null, mountedNextVNode: VirtualNodeType = null, $container: HTMLElement = null, includePortals: boolean = false) {
 	const componentTree = getComponentTree(uid);

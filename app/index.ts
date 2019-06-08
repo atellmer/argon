@@ -10,9 +10,9 @@ const Header = Argon.createComponent({
 	}
 })
 
-const Footer = Argon.createComponent((props) => {
+const Item = Argon.createComponent(({ id }) => {
 	return Argon.dom`
-		<div>Footer</div>
+		<div>Item {id}</div>
 	`
 })
 
@@ -29,10 +29,7 @@ const App = Argon.createComponent({
 
 		return Argon.dom`
 			<div>
-				${Header({})}
-				<div>Count: ${count}<div>
-				<button on:click="${this.handleClick}">Click me</button>
-				${Footer({myProp: '555'})}
+				${[1,2,3,4].map(x => Item({id: x}))}
 			</div>
 		`;
 	}

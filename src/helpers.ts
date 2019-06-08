@@ -72,10 +72,6 @@ function isDOMElement(element) {
 	return element instanceof Element || element instanceof HTMLDocument;  
 }
 
-function isVirtualNode(node: any) {
-	return typeof node === 'object' &&  node.isVNode === true; 
-}
-
 function deepClone(obj: any) {
 	const isObject = typeof obj === 'object';
 	const copyObj = isObject
@@ -104,6 +100,5 @@ export {
 	sanitize,
 	error,
 	isDOMElement,
-	isVirtualNode,
 	deepClone
 }

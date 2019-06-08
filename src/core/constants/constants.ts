@@ -18,18 +18,20 @@ export const $$ref = Symbol('ref');
 export const NODE_SEPARATOR = '@argon:value';
 export const NODE_REPLACER = '@argon:node';
 export const NODE_LIST_REPLACER = '@argon:node-list';
-export const COMPONENT_REPLACER = '@argon:component';
+export const STATEFULL_COMPONENT_REPLACER = '@argon:statefull-component';
+export const STATEFULL_COMPONENT_LIST_REPLACER = '@argon:statefull-component-list';
 export const STATELESS_COMPONENT_REPLACER = '@argon:stateless-component';
-export const COMPONENT_LIST_REPLACER = '@argon:component-list';
+export const STATELESS_COMPONENT_LIST_REPLACER = '@argon:stateless-component-list';
 export const EVENT_HANDLER_REPLACER = '@argon:event';
 export const EMPTY_REPLACER = '@argon:empty';
 export const PORTAL_REPLACER = '@argon:portal';
 
 export const NODE = 'NODE';
 export const NODE_LIST = 'NODE_LIST';
-export const COMPONENT = 'COMPONENT';
-export const COMPONENT_LIST = 'COMPONENT_LIST';
+export const STATEFULL_COMPONENT = 'STATEFULL_COMPONENT';
+export const STATEFULL_COMPONENT_LIST = 'STATEFULL_COMPONENT_LIST';
 export const STATELESS_COMPONENT = 'STATELESS_COMPONENT';
+export const STATELESS_COMPONENT_LIST = 'STATELESS_COMPONENT_LIST';
 
 export const ATTR_ROOT_APP = 'data-argonroot';
 export const ATTR_COMPONENT_ID = 'data-argonid';
