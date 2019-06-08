@@ -510,8 +510,6 @@ function mountVirtualDOM(
   if (isCommentNode) {
     const textContent = mountedVNode.content;
 
-    console.log('xxx', textContent)
-
     if (textContent === NODE_REPLACER) {
       const findElementFn = (e: ElementReplacerType<VirtualNodeType>) => e.type === NODE;
       const findVNodeFn = (vNode: VirtualNodeType) =>
@@ -642,16 +640,17 @@ function mountVirtualDOM(
       parentVNode.children[vNodeIdx] = nextVNode;
     } else if (textContent === STATELESS_COMPONENT_LIST_REPLACER) {
       const findElementFn = (e: ElementReplacerType<Array<HTMLElement>>) =>
-        e.type === NODE_LIST;
+        e.type === STATELESS_COMPONENT_LIST;
       const findVNodeFn = (vNode: VirtualNodeType) =>
-        vNode.type === VDOM_ELEMENT_TYPES.COMMENT && vNode.content === NODE_LIST_REPLACER;
+        vNode.type === VDOM_ELEMENT_TYPES.COMMENT && vNode.content === STATELESS_COMPONENT_LIST_REPLACER;
       const elementIdx = elements.findIndex(findElementFn);
       const vNodeIdx = parentVNode.children.findIndex(findVNodeFn);
-      const nodeList = elements[elementIdx].value;
-      const mapNodesFn = (vNode: VirtualNodeType) => parentVNode.children.push(vNode);
+      const factoryList = elements[elementIdx].value;
+      const mapFactoryFn = (componentFactory: StatelessComponentFactoryType) =>
+        parentVNode.children.push(componentFactory.createElement());
 
       elements.splice(elementIdx, 1);
-      nodeList.forEach(mapNodesFn);
+      factoryList.forEach(mapFactoryFn);
       parentVNode.children.splice(vNodeIdx, 1);
     }
   }

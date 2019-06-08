@@ -141,6 +141,8 @@ function dom(string: TemplateStringsArray, ...args: Array<any>) {
 
 	vNode = mountVirtualDOM(sourceVNode, elements);
 
+	console.log('vNode', vNode)
+
 	return vNode;
 }
 

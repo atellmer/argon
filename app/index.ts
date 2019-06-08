@@ -12,7 +12,7 @@ const Header = Argon.createComponent({
 
 const Item = Argon.createComponent(({ id }) => {
 	return Argon.dom`
-		<div>Item {id}</div>
+		<div>Item ${id}</div>
 	`
 })
 
