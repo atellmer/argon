@@ -62,9 +62,13 @@ function delegateEvent(rootEl: HTMLElement, uid: number, key: string, nodeID: st
 		} 
 
 		if (nodeID === currentEventTargetId) {
-			setCurrentEventTargetId(null);
 			handler(e);
 		}
+
+		const timeout = setTimeout(() => {
+			clearTimeout(timeout);
+			setCurrentEventTargetId(null);
+		});
 	};
 
 	if (!app.eventHandlers[key]) {

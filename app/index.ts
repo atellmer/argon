@@ -1,13 +1,10 @@
 import * as Argon from '../src';
 
 
-const Header = Argon.createComponent({
-	displayName: 'Header',
-	render() {
-		return Argon.dom`
-			<header>Header</header>
-		`;
-	}
+const Content = Argon.createComponent(() => {
+	return Argon.dom`
+		<div>Content</div>
+	`;
 })
 
 const Item = Argon.createComponent(({ id, onRemove }) => {
@@ -22,18 +19,28 @@ const Item = Argon.createComponent(({ id, onRemove }) => {
 
 const App = Argon.createComponent({
 	displayName: 'App',
-	getInitialState: () => ({ items: Array(5).fill(null).map((v, idx) => idx) }),
+	getInitialState: () => ({
+		isOpen: false,
+		items: Array(10).fill(null).map((v, idx) => idx)
+	}),
 	handleRemove(x) {
 		return () => {
 			this.setState({ items: this.state.items.filter(v => v !== x)});
 		}
 	},
+	handleOpen() {
+		this.setState({ isOpen: !this.state.isOpen });
+	},
 	render() {
-		const { items } = this.state;
+		const { isOpen, items } = this.state;
 
 		return Argon.dom`
 			<div>
-				${items.map(x => Item({ key: x, id: x, onRemove: this.handleRemove }))}
+				<div>
+					${items.map(x => Item({ key: x, id: x, onRemove: this.handleRemove }))}
+				</div>
+				${isOpen && Content()}
+				<button on:click="${this.handleOpen}">${isOpen ? 'Close' : 'Open'}</button>
 			</div>
 		`;
 	}

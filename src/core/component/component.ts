@@ -276,8 +276,6 @@ function createComponent(defObj: ComponentDefType | Function, options: Component
 						props: computedProps,
 					} as StatefullComponentFactoryType;
 
-			console.log('factory', factory)
-
 			return factory;
 		}
 

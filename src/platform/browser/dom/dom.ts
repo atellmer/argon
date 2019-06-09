@@ -82,7 +82,7 @@ function dom(string: TemplateStringsArray, ...args: Array<any>) {
 	const isStatefullComponent = (o: StatefullComponentFactoryType) => isObject(o) && !isEmpty(o) && (o as StatefullComponentFactoryType).isStatefullComponent === true;
 	const isStatelessComponent = (o: StatelessComponentFactoryType) => isObject(o) && !isEmpty(o) && (o as StatelessComponentFactoryType).isStatelessComponent === true;
 	
-	const mapArgsFn = (arg: any) => {
+	const mapArgsFn = (arg: any, argIdx: number) => {
 		let replacer = '';
 
 		if (isStatefullComponent(arg)) {
@@ -114,7 +114,22 @@ function dom(string: TemplateStringsArray, ...args: Array<any>) {
 		} else if (isFunction(arg)) {
 			if (!isRef(arg)) {
 				replacer = EVENT_HANDLER_REPLACER;
-				instance[$$eventHandlers].push(arg);
+				const componentListIdx = args.findIndex(arg => isArray(arg) && isStatelessComponent(arg[0]));
+				const hasComponentList = componentListIdx > -1;
+
+				if (hasComponentList && componentListIdx !== argIdx) {
+					const componentList = args[componentListIdx];
+
+					instance[$$eventHandlers][componentList.length] = arg;
+				} else {
+					const firstEmptyIdx = instance[$$eventHandlers].findIndex(v => isUndefined(v));
+
+					if (firstEmptyIdx > -1) {
+						instance[$$eventHandlers][firstEmptyIdx] = arg;
+					} else {
+						instance[$$eventHandlers].push(arg);
+					}
+				}
 			} else {
 				const hasSameRef = (ref: Function, refs: Array<Function>) => {
 					const isSameRef = (comparedRef: Function) => comparedRef === ref;
