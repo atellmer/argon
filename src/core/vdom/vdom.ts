@@ -607,8 +607,13 @@ function mountVirtualDOM(
       const elementIdx = elements.findIndex(findElementFn);
       const vNodeIdx = parentVNode.children.findIndex(findVNodeFn);
       const factoryList = elements[elementIdx].value;
-      const mapFactoryFn = (componentFactory: StatelessComponentFactoryType) =>
-        parentVNode.children.push(componentFactory.createElement());
+      const mapFactoryFn = (componentFactory: StatelessComponentFactoryType) => {
+				const createdVNode = componentFactory.createElement();
+				const key = componentFactory.props[ATTR_KEY];
+
+				!isEmpty(key) && setAttribute(createdVNode, ATTR_KEY, key);
+				parentVNode.children.push(createdVNode);
+			}
 
       elements.splice(elementIdx, 1);
       factoryList.forEach(mapFactoryFn);

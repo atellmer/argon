@@ -10,16 +10,19 @@ const Header = Argon.createComponent({
 	}
 })
 
-const Item = Argon.createComponent(({ id }) => {
+const Item = Argon.createComponent(({ id, onRemove }) => {
 	return Argon.dom`
-		<div>Item ${id}</div>
+		<div>
+			Item ${id}
+			<button on:click="${onRemove(id)}">remove</button>
+		</div>
 	`
 })
 
 
 const App = Argon.createComponent({
 	displayName: 'App',
-	getInitialState: () => ({ items: [1,2,3,4,5,6] }),
+	getInitialState: () => ({ items: [0,1,2,3,4,5,6] }),
 	handleRemove(x) {
 		return () => {
 			this.setState({ items: this.state.items.filter(v => v !== x)});
@@ -30,12 +33,7 @@ const App = Argon.createComponent({
 
 		return Argon.dom`
 			<div>
-				${items.map(x => Argon.dom`
-					<span key="${x}">
-						${Item({id: x})}
-						<button on:click="${this.handleRemove(x)}">remove</button>
-					</span>
-				`)}
+				${items.map(x => Item({ key: x, id: x, onRemove: this.handleRemove }))}
 			</div>
 		`;
 	}
