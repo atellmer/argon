@@ -59,7 +59,12 @@ type ComponentDefType = {
 	willUpdate?: (p, s) => void;
 	didUpdate?: (p, s) => void;
 	willUnmount?: () => void;
-};
+}
+
+type ComponentOptions = {
+	displayName?: string;
+	defaultProps?: any;
+}
 
 interface ComponentType extends ComponentDefType {
 	setState?: (state, cb?) => void;
@@ -67,8 +72,8 @@ interface ComponentType extends ComponentDefType {
 }
 
 type StatefullComponentFactoryType = {
-	is: string;
 	isStatefullComponent: boolean;
+	displayName: string;
 	createInstance: () => ComponentType;
 	getElementToken: () => Symbol;
 	config: {
@@ -82,9 +87,9 @@ type StatefullComponentFactoryType = {
 	};
 }
 
-type StatelessComponentFactoryType =  {
-	is: string
+type StatelessComponentFactoryType = {
 	isStatelessComponent: boolean;
+	displayName: string;
 	createElement: () => VirtualNodeType,
 	uid: number,
 	props: {
@@ -130,7 +135,7 @@ function setComponentTree(uid: number, componentTree: ComponentTreeType) {
 	app.componentTree = { ...componentTree };
 };
 
-function createComponent(defObj: ComponentDefType | Function) {
+function createComponent(defObj: ComponentDefType | Function, options: ComponentOptions = null) {
 	const def = defObj as ComponentDefType;
 	
 	const {
@@ -143,7 +148,7 @@ function createComponent(defObj: ComponentDefType | Function) {
 		$$portal,
 		$$eventHandlers
 	} = constants;
-	const $$elementToken = Symbol(def.displayName || 'default element token');
+	const $$elementToken = Symbol(def.displayName || 'element');
 	const config = def.config || { pure: false };
 	const reservedPropNames = {
 		'setState': true,
@@ -246,34 +251,35 @@ function createComponent(defObj: ComponentDefType | Function) {
 
 	return (props: {} = {}) => {
 		const resolveFactory = (def) => {
-			const statefullFactory = {
-				isStatefullComponent: true,
-				is: $$elementToken.toString(),
-				createInstance: () => new Component(),
-				getElementToken: () => $$elementToken,
-				uid: 0,
-				config,
-				mountPortal: null,
-				props: {
-					...getDefaultProps(def),
-					...props
-				},
-			} as StatefullComponentFactoryType;
-	
-			const statelessFatory = {
-				isStatelessComponent: true,
-				is: $$elementToken.toString(),
-				createElement: () => def(props),
-				uid: 0,
-				props: {
-					...getDefaultProps(def),
-					...props
-				}
-			} as StatelessComponentFactoryType;
+			const isStateless = isFunction(def);
+			const displayName = def.displayName || (options ? options.displayName : '');
+			const defaultProps = isStateless
+				? options && options.defaultProps ? options.defaultProps : {}
+				: getDefaultProps(def);
+			const computedProps = { ...defaultProps, ...props };
+			const factory = isStateless
+				? {
+						isStatelessComponent: true,
+						displayName,
+						createElement: () => def(computedProps),
+						uid: 0,
+						props: computedProps,
+					} as StatelessComponentFactoryType
+				: {
+						isStatefullComponent: true,
+						displayName,
+						createInstance: () => new Component(),
+						getElementToken: () => $$elementToken,
+						uid: 0,
+						config,
+						mountPortal: null,
+						props: computedProps,
+					} as StatefullComponentFactoryType;
 
-			return isFunction(def) ? statelessFatory : statefullFactory;
+			console.log('factory', factory)
+
+			return factory;
 		}
-		
 
 		return resolveFactory(def);
 	};

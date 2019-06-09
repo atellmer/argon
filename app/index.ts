@@ -17,12 +17,12 @@ const Item = Argon.createComponent(({ id, onRemove }) => {
 			<button on:click="${onRemove(id)}">remove</button>
 		</div>
 	`
-})
+}, { displayName: 'Item', defaultProps: { id: -1 } });
 
 
 const App = Argon.createComponent({
 	displayName: 'App',
-	getInitialState: () => ({ items: Array(1000).fill(null).map((v, idx) => idx) }),
+	getInitialState: () => ({ items: Array(5).fill(null).map((v, idx) => idx) }),
 	handleRemove(x) {
 		return () => {
 			this.setState({ items: this.state.items.filter(v => v !== x)});
