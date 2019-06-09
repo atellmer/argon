@@ -19,7 +19,7 @@ import {
   VDOM_ELEMENT_TYPES,
   VDOM_ACTIONS
 } from "../constants";
-import { isEmpty, isFunction } from "../../helpers";
+import { isEmpty, isFunction, deepClone } from "../../helpers";
 import {
   getUIDActive,
   getRegistery,
@@ -45,7 +45,8 @@ type VirtualNodeType = {
   content?: string;
   children: Array<VirtualNodeType>;
   props?: any;
-  route: Array<number>;
+	route: Array<number>;
+	processed: boolean;
 };
 
 type VirtualDOMActionsType =
@@ -114,7 +115,8 @@ function createTextNode(content: string): VirtualNodeType {
     attrs: null,
     name: null,
     children: [],
-    route: [],
+		route: [],
+		processed: false,
     content
   };
 }
@@ -127,7 +129,8 @@ function createCommentNode(content: string): VirtualNodeType {
     name: null,
     attrs: null,
     children: [],
-    route: [],
+		route: [],
+		processed: false,
     content
   };
 }
@@ -142,7 +145,8 @@ function createElement(tag: string): VirtualNodeType {
     void: false,
     attrs: {},
     children: [],
-    route: []
+		route: [],
+		processed: false
   };
 
   const replaceTag = (match: string) => {
@@ -293,7 +297,9 @@ function getVirtualDOMDiff(
 ): Array<VirtualDOMDiffType> {
   const { ATTR_DONT_UPDATE_NODE, ATTR_PORTAL_ID } = constants;
   let diff = [...prevDiff];
-  const route = [...prevRoute];
+	const route = [...prevRoute];
+	const key = getNodeKey(VDOM);
+	const nextKey = getNodeKey(nextVDOM);
 
   if (isEmpty(targetNextVDOM)) {
     targetNextVDOM = { ...nextVDOM };
@@ -319,7 +325,7 @@ function getVirtualDOMDiff(
   if (!VDOM) {
     diff.push(createDiffAction(VDOM_ACTIONS.ADD_NODE, route, null, nextVDOM));
     return diff;
-  } else if (!nextVDOM) {
+  } else if (!nextVDOM || (key !== nextKey)) {
     diff.push(createDiffAction(VDOM_ACTIONS.REMOVE_NODE, route, VDOM, null));
     return diff;
   } else if (
@@ -334,6 +340,7 @@ function getVirtualDOMDiff(
   } else {
     if (VDOM.attrs && nextVDOM.attrs) {
       const mapOldAttr = (attrName: string) => {
+				if (attrName === ATTR_KEY) return;
         if (isEmpty(nextVDOM.attrs[attrName])) {
           diff.push(
             createDiffAction(
@@ -355,6 +362,7 @@ function getVirtualDOMDiff(
         }
       };
       const mapNewAttr = (attrName: string) => {
+				if (attrName === ATTR_KEY) return;
         if (isEmpty(VDOM.attrs[attrName])) {
           diff.push(
             createDiffAction(
@@ -371,20 +379,16 @@ function getVirtualDOMDiff(
       Object.keys(nextVDOM.attrs).forEach(mapNewAttr);
     }
 
-    level++;
+		level++;
 
-    const iterateVDOM = (
-      vNode: VirtualNodeType,
-      nextVNode: VirtualNodeType
-    ) => {
-      const iterations = Math.max(
-        vNode.children.length,
-        nextVNode.children.length
-      );
+    const iterateVDOM = (vNode: VirtualNodeType, nextVNode: VirtualNodeType) => {
+      const iterations = Math.max(vNode.children.length, nextVNode.children.length);
 
       for (let i = 0; i < iterations; i++) {
         const childVNode = VDOM.children[i];
-        const childNextVNode = nextVDOM.children[i];
+				const childNextVNode = nextVDOM.children[i];
+
+				if (childVNode.processed) continue;
 
         if (getAttribute(childNextVNode, ATTR_DONT_UPDATE_NODE)) {
           removeAttribute(nextVDOM, ATTR_DONT_UPDATE_NODE);
@@ -402,66 +406,23 @@ function getVirtualDOMDiff(
             level,
             i
           )
-        ];
+				];
+
+				childVNode.processed = true;
+
+				const key = getNodeKey(childVNode);
+				const nextKey = getNodeKey(childNextVNode);
+
+				if (key !== nextKey) {
+					VDOM.children.splice(i, 1);
+					iterateVDOM(VDOM, nextVDOM);
+					break;
+				}
       }
-    };
+		};
 
-    const findKeyNode = (vNode: VirtualNodeType) => !isEmpty(getNodeKey(vNode));
-    const enableDiffByKey =
-      VDOM.children && nextVDOM.children
-        ? VDOM.children.some(findKeyNode) &&
-          VDOM.children.length > nextVDOM.children.length
-        : false;
-
-    if (enableDiffByKey) {
-      const filterNodeFn = (vNode: VirtualNodeType) => {
-        const getDiffKeyFn = (compareVNode: VirtualNodeType) =>
-          getNodeKey(compareVNode) !== getNodeKey(vNode);
-        return nextVDOM.children.every(getDiffKeyFn);
-      };
-      const diffNodeByKeyList = VDOM.children.filter(filterNodeFn);
-      const mapNodeByKeyFn = (vNode: VirtualNodeType, idx: number) => {
-        const findSameNodeFn = (compareVNode: VirtualNodeType) =>
-          compareVNode === vNode;
-        const idxNode = VDOM.children.findIndex(findSameNodeFn);
-
-        diff = [
-          ...getVirtualDOMDiff(
-            vNode,
-            null,
-            includePortals,
-            targetNextVDOM,
-            diff,
-            [...route],
-            level,
-            idxNode - idx
-          )
-        ];
-      };
-
-      diffNodeByKeyList.forEach(mapNodeByKeyFn);
-
-      const filterDiffNodesFn = (vNode: VirtualNodeType) => {
-        const compareNodeFn = (compareVNode: VirtualNodeType) =>
-          compareVNode !== vNode;
-        return diffNodeByKeyList.every(compareNodeFn);
-      };
-      const immVNode = {
-        ...VDOM,
-        children: VDOM.children.filter(filterDiffNodesFn)
-      };
-      const immNextVNode = {
-        ...nextVDOM,
-        children: nextVDOM.children.filter(filterDiffNodesFn)
-      };
-
-      iterateVDOM(immVNode, immNextVNode);
-
-      return diff;
-    }
-
-    iterateVDOM(VDOM, nextVDOM);
-  }
+		iterateVDOM(VDOM, nextVDOM);
+	}
 
   return diff;
 }

@@ -19,17 +19,23 @@ const Item = Argon.createComponent(({ id }) => {
 
 const App = Argon.createComponent({
 	displayName: 'App',
-	getInitialState: () => ({ count: 0 }),
-	handleClick() {
-		this.setState({ count: this.state.count + 1 });
-		console.log('click', );
+	getInitialState: () => ({ items: [1,2,3,4,5,6] }),
+	handleRemove(x) {
+		return () => {
+			this.setState({ items: this.state.items.filter(v => v !== x)});
+		}
 	},
 	render() {
-		const { count } = this.state;
+		const { items } = this.state;
 
 		return Argon.dom`
 			<div>
-				${[1,2,3,4].map(x => Item({id: x}))}
+				${items.map(x => Argon.dom`
+					<span key="${x}">
+						${Item({id: x})}
+						<button on:click="${this.handleRemove(x)}">remove</button>
+					</span>
+				`)}
 			</div>
 		`;
 	}

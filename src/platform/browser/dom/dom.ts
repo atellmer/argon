@@ -141,8 +141,6 @@ function dom(string: TemplateStringsArray, ...args: Array<any>) {
 
 	vNode = mountVirtualDOM(sourceVNode, elements);
 
-	console.log('vNode', vNode)
-
 	return vNode;
 }
 
@@ -333,7 +331,7 @@ function processDOM(id: string, uid: number, mountedVNode: VirtualNodeType = nul
 
 	const diff = getVirtualDOMDiff(oldVNode, newVNode, includePortals);
 
-	//console.log('[diff]', diff)
+	console.log('[diff]', diff)
 
 	patchDOM(diff, $node, uid, includePortals);
 
