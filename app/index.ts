@@ -22,7 +22,7 @@ const Item = Argon.createComponent(({ id, onRemove }) => {
 
 const App = Argon.createComponent({
 	displayName: 'App',
-	getInitialState: () => ({ items: [0,1,2,3,4,5,6] }),
+	getInitialState: () => ({ items: Array(1000).fill(null).map((v, idx) => idx) }),
 	handleRemove(x) {
 		return () => {
 			this.setState({ items: this.state.items.filter(v => v !== x)});

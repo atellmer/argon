@@ -10,6 +10,7 @@ type ScopeType = {
 		active: number;
 	},
 	currentMountedComponentId: string | null;
+	currentEventTargetId: string | null;
 }
 
 type AppType = {
@@ -33,6 +34,9 @@ const getUIDActive = (): number => scope.uid.active;
 const setUIDActive = (uid: number) => scope.uid.active = uid;
 const getCurrentMountedComponentId = (): string | null => scope.currentMountedComponentId;
 const setCurrentMountedComponentId = (id: string | null) => scope.currentMountedComponentId = id;
+const getCurrentEventTargetId = () => scope.currentEventTargetId;
+const setCurrentEventTargetId = (id: string | null) => scope.currentEventTargetId = id;
+
 
 function createScope(): ScopeType {
 	return {
@@ -41,7 +45,8 @@ function createScope(): ScopeType {
 			mounted: 0,
 			active: 0
 		},
-		currentMountedComponentId: null
+		currentMountedComponentId: null,
+		currentEventTargetId: null
 	};
 }
 
@@ -68,6 +73,8 @@ export {
 	setUIDActive,
 	getCurrentMountedComponentId,
 	setCurrentMountedComponentId,
+	getCurrentEventTargetId,
+	setCurrentEventTargetId,
 	createScope,
 	createApp
 }

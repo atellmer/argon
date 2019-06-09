@@ -387,6 +387,8 @@ function getVirtualDOMDiff(
       for (let i = 0; i < iterations; i++) {
         const childVNode = VDOM.children[i];
 				const childNextVNode = nextVDOM.children[i];
+				const key = getNodeKey(childVNode);
+				const nextKey = getNodeKey(childNextVNode);
 
 				if (childVNode.processed) continue;
 
@@ -409,9 +411,6 @@ function getVirtualDOMDiff(
 				];
 
 				childVNode.processed = true;
-
-				const key = getNodeKey(childVNode);
-				const nextKey = getNodeKey(childNextVNode);
 
 				if (key !== nextKey) {
 					VDOM.children.splice(i, 1);

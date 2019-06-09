@@ -1,5 +1,9 @@
 import { VirtualNodeType } from '../../../core/vdom';
-import { getRegistery } from '../../../core/scope';
+import {
+	getRegistery,
+	getCurrentEventTargetId,
+	setCurrentEventTargetId,
+} from '../../../core/scope';
 import {
 	EVENT_HANDLER_REPLACER,
 	ATTR_COMPONENT_ID,
@@ -47,10 +51,20 @@ function makeEvents(vNode: VirtualNodeType, instanceID: string, uid: number) {
 function delegateEvent(rootEl: HTMLElement, uid: number, key: string, nodeID: string, eventName: string, handler: (e: Event) => void) {
 	const app = getRegistery().get(uid);
 	const eventHandler = (e: Event) => {
-		const [route] = getDOMElementRoute(rootEl, e.target as HTMLElement);
+		let currentEventTargetId = getCurrentEventTargetId();
 
-		route.shift();
-		nodeID === route.join('.') && handler(e);
+		if (!currentEventTargetId) {
+			const [route] = getDOMElementRoute(rootEl, e.target as HTMLElement);
+
+			route.shift();
+			currentEventTargetId = route.join('.');
+			setCurrentEventTargetId(currentEventTargetId);
+		} 
+
+		if (nodeID === currentEventTargetId) {
+			setCurrentEventTargetId(null);
+			handler(e);
+		}
 	};
 
 	if (!app.eventHandlers[key]) {

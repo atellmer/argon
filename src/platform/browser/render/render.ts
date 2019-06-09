@@ -11,7 +11,7 @@ import {
 	setCurrentMountedComponentId
 } from '../../../core/scope';
 import {
-	ComponentFactoryType,
+	StatefullComponentFactoryType,
 	wire,
 	getComponentTree
 } from '../../../core/component';
@@ -21,7 +21,7 @@ import {
 } from '../dom';
 
 
-function renderComponent(componentFactory: ComponentFactoryType, container: HTMLElement) {
+function renderComponent(componentFactory: StatefullComponentFactoryType, container: HTMLElement) {
 	const isMounted = Boolean(container.getAttribute(ATTR_ROOT_APP));
 	const uidMounted = getUIDMounted();
 
