@@ -42,6 +42,7 @@ import {
 	STATELESS_COMPONENT_LIST,
 	STATELESS_COMPONENT_LIST_REPLACER,
 	EVENT_HANDLER_REPLACER,
+	QUEUE_EVENTS,
 	EMPTY_REPLACER,
 	VDOM_ELEMENT_TYPES,
 	ATTR_REF,
@@ -81,6 +82,8 @@ function dom(string: TemplateStringsArray, ...args: Array<any>) {
 	const instance = componentTreeNode.instance;
 	const isStatefullComponent = (o: StatefullComponentFactoryType) => isObject(o) && !isEmpty(o) && (o as StatefullComponentFactoryType).isStatefullComponent === true;
 	const isStatelessComponent = (o: StatelessComponentFactoryType) => isObject(o) && !isEmpty(o) && (o as StatelessComponentFactoryType).isStatelessComponent === true;
+	const markedArgs = [];
+	const eventMap = new Map();
 	
 	const mapArgsFn = (arg: any, argIdx: number) => {
 		let replacer = '';
@@ -114,21 +117,15 @@ function dom(string: TemplateStringsArray, ...args: Array<any>) {
 		} else if (isFunction(arg)) {
 			if (!isRef(arg)) {
 				replacer = EVENT_HANDLER_REPLACER;
-				const componentListIdx = args.findIndex(arg => isArray(arg) && isStatelessComponent(arg[0]));
-				const hasComponentList = componentListIdx > -1;
-
-				if (hasComponentList && componentListIdx !== argIdx) {
-					const componentList = args[componentListIdx];
-
-					instance[$$eventHandlers][componentList.length] = arg;
+				const sliced = args.slice(0, argIdx).reverse();
+				const stateless = sliced.find(a => isArray(a) ? isStatelessComponent(a[0]) : isStatelessComponent(a));
+				
+				if (stateless) {
+					const fn = isArray(stateless) ? stateless[0] : stateless;
+					!eventMap.get(fn) && eventMap.set(fn, []);
+					eventMap.get(fn).push(() => instance[$$eventHandlers].push(arg));
 				} else {
-					const firstEmptyIdx = instance[$$eventHandlers].findIndex(v => isUndefined(v));
-
-					if (firstEmptyIdx > -1) {
-						instance[$$eventHandlers][firstEmptyIdx] = arg;
-					} else {
-						instance[$$eventHandlers].push(arg);
-					}
+					instance[$$eventHandlers].push(arg);
 				}
 			} else {
 				const hasSameRef = (ref: Function, refs: Array<Function>) => {
@@ -150,7 +147,7 @@ function dom(string: TemplateStringsArray, ...args: Array<any>) {
 	};
 
 	args.forEach(mapArgsFn);
-
+	elements.push({ type: QUEUE_EVENTS, value: eventMap });
 	sourceVNode = createVirtualDOMFromSource(markup);
 	sourceVNode = sourceVNode.length > 1 ? sourceVNode : sourceVNode[0];
 

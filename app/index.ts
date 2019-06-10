@@ -36,9 +36,13 @@ const App = Argon.createComponent({
 
 		return Argon.dom`
 			<div>
+				${isOpen && Content()}
+				<button on:click="${this.handleOpen}">${isOpen ? 'Close' : 'Open'}</button>
 				<div>
 					${items.map(x => Item({ key: x, id: x, onRemove: this.handleRemove }))}
-				</div>
+				</div>	
+				${isOpen && Content()}
+				<button on:click="${this.handleOpen}">${isOpen ? 'Close' : 'Open'}</button>
 				${isOpen && Content()}
 				<button on:click="${this.handleOpen}">${isOpen ? 'Close' : 'Open'}</button>
 			</div>
