@@ -10,7 +10,12 @@ type ScopeType = {
 		active: number;
 	},
 	currentMountedComponentId: string | null;
-	currentEventTargetId: string | null;
+	currentEventData: {
+		eventName?: string | null;
+		targetId?: string | null;
+		handlerIdx?: number;
+		handlersCount?: number;
+	}
 }
 
 type AppType = {
@@ -34,8 +39,8 @@ const getUIDActive = (): number => scope.uid.active;
 const setUIDActive = (uid: number) => scope.uid.active = uid;
 const getCurrentMountedComponentId = (): string | null => scope.currentMountedComponentId;
 const setCurrentMountedComponentId = (id: string | null) => scope.currentMountedComponentId = id;
-const getCurrentEventTargetId = () => scope.currentEventTargetId;
-const setCurrentEventTargetId = (id: string | null) => scope.currentEventTargetId = id;
+const getCurrentEventData = () => scope.currentEventData;
+const setCurrentEventData = (data: ScopeType['currentEventData']) => scope.currentEventData = { ...scope.currentEventData, ...data };
 
 function createScope(): ScopeType {
 	return {
@@ -45,7 +50,12 @@ function createScope(): ScopeType {
 			active: 0
 		},
 		currentMountedComponentId: null,
-		currentEventTargetId: null
+		currentEventData: {
+			eventName: null,
+			targetId: null,
+			handlerIdx: 0,
+			handlersCount: 0
+		}
 	};
 }
 
@@ -71,8 +81,8 @@ export {
 	setUIDActive,
 	getCurrentMountedComponentId,
 	setCurrentMountedComponentId,
-	getCurrentEventTargetId,
-	setCurrentEventTargetId,
+	getCurrentEventData,
+	setCurrentEventData,
 	createScope,
 	createApp
 }

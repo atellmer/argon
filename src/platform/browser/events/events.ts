@@ -1,8 +1,8 @@
 import { VirtualNodeType } from '../../../core/vdom';
 import {
 	getRegistery,
-	getCurrentEventTargetId,
-	setCurrentEventTargetId,
+	getCurrentEventData,
+	setCurrentEventData,
 } from '../../../core/scope/scope';
 import {
 	EVENT_HANDLER_REPLACER,
@@ -51,24 +51,38 @@ function makeEvents(vNode: VirtualNodeType, instanceID: string, uid: number) {
 function delegateEvent(rootEl: HTMLElement, uid: number, key: string, nodeID: string, eventName: string, handler: (e: Event) => void) {
 	const app = getRegistery().get(uid);
 	const eventHandler = (e: Event) => {
-		let currentEventTargetId = getCurrentEventTargetId();
+		let { targetId, handlerIdx } = getCurrentEventData();
+		const resetEventData = () => setCurrentEventData({ targetId: null, handlersCount: 0, handlerIdx: 0 });
 
-		if (!currentEventTargetId) {
+		if (!targetId) {
 			const [route] = getDOMElementRoute(rootEl, e.target as HTMLElement);
 
 			route.shift();
-			currentEventTargetId = route.join('.');
-			setCurrentEventTargetId(currentEventTargetId);
+			targetId = route.join('.');
+			setCurrentEventData({
+				eventName,
+				targetId,
+				handlersCount: Object
+					.keys(app.eventHandlers)
+					.map(key => app.eventHandlers[key])
+					.filter(x => Boolean(x[eventName]))
+					.length
+			});
 		} 
 
-		if (nodeID === currentEventTargetId) {
+		const { handlersCount } = getCurrentEventData();
+
+		if (nodeID === targetId) {
 			handler(e);
+			resetEventData();
+			return;
 		}
 
-		const timeout = setTimeout(() => {
-			clearTimeout(timeout);
-			setCurrentEventTargetId(null);
-		});
+		if (handlerIdx >= handlersCount) { 
+			resetEventData();
+		} else {
+			setCurrentEventData({ handlerIdx: handlerIdx + 1  });
+		}
 	};
 
 	if (!app.eventHandlers[key]) {

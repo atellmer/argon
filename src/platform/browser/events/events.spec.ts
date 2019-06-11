@@ -44,32 +44,29 @@ test(`[Events]: remove nodes by click`, (t) => {
 
 	setTimeout(() => {
 		simulant.fire($container.querySelector('#btn-2'), 'click');
+		simulant.fire($container.querySelector('#btn-4'), 'click');
 
-		setTimeout(() => {
-			simulant.fire($container.querySelector('#btn-4'), 'click');
-
-			const expected = transformMarkup(`
-				<div data-argonid="0">
-					<div key="0">
-						Item 0
-						<button id="btn-0">x</button></div>
-					<div key="1">
-						Item 1
-						<button id="btn-1">x</button>
-					</div>
-					<div key="3">
-						Item 3
-						<button id="btn-3">x</button>
-					</div>
-					<div key="5">
-						Item 5
-					<button id="btn-5">x</button></div>
+		const expected = transformMarkup(`
+			<div data-argonid="0">
+				<div key="0">
+					Item 0
+					<button id="btn-0">x</button></div>
+				<div key="1">
+					Item 1
+					<button id="btn-1">x</button>
 				</div>
-			`);
-			const result = transformMarkup(html($container));
-			
-			t.equal(expected, result);
-			t.end();
-		});
+				<div key="3">
+					Item 3
+					<button id="btn-3">x</button>
+				</div>
+				<div key="5">
+					Item 5
+				<button id="btn-5">x</button></div>
+			</div>
+		`);
+		const result = transformMarkup(html($container));
+		
+		t.equal(expected, result);
+		t.end();
 	});
 });
