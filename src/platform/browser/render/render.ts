@@ -1,7 +1,7 @@
 import {
 	ATTR_ROOT_APP,
 	$$id
-} from '../../../core/constants';
+} from '../../../core/constants/constants';
 import {
 	createApp,
 	getRegistery,
@@ -9,16 +9,16 @@ import {
 	setUIDMounted,
 	setUIDActive,
 	setCurrentMountedComponentId
-} from '../../../core/scope';
+} from '../../../core/scope/scope';
 import {
 	StatefullComponentFactoryType,
 	wire,
 	getComponentTree
-} from '../../../core/component';
+} from '../../../core/component/component';
 import {
 	processDOM,
 	mount
-} from '../dom';
+} from '../dom/dom';
 
 
 function renderComponent(componentFactory: StatefullComponentFactoryType, container: HTMLElement) {

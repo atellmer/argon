@@ -1,17 +1,17 @@
 import { HashMap } from '../shared';
-import * as constants from '../constants';
-const {
+import {
 	$$uid,
-	$$prevProps,
-	$$eventHandlers,
-	$$isMounted,
-	$$root,
 	$$id,
-	$$markedIDMap,
-	$$getComponentSymbol,
 	$$cache,
 	$$orderedIDList,
+	$$prevState,
+	$$prevProps,
+	$$isMounted,
 	$$portal,
+	$$eventHandlers,
+	$$root,
+	$$markedIDMap,
+	$$getComponentSymbol,
 	ATTR_COMPONENT_ID,
 	ATTR_KEY,
 	ATTR_COMPONENT_NAME,
@@ -19,7 +19,7 @@ const {
 	ATTR_PORTAL_ID,
 	STATEFULL_COMPONENT_REPLACER,
 	VDOM_ELEMENT_TYPES
-} = constants;
+} from '../constants';
 import { isFunction, sanitize, error, isUndefined, isNull } from '../../helpers';
 import {
 	getRegistery,
@@ -137,17 +137,6 @@ function setComponentTree(uid: number, componentTree: ComponentTreeType) {
 
 function createComponent(defObj: ComponentDefType | Function, options: ComponentOptions = null) {
 	const def = defObj as ComponentDefType;
-	
-	const {
-		$$id,
-		$$cache,
-		$$orderedIDList,
-		$$prevState,
-		$$prevProps,
-		$$isMounted,
-		$$portal,
-		$$eventHandlers
-	} = constants;
 	const $$elementToken = Symbol(def.displayName || 'element');
 	const config = def.config || { pure: false };
 	const reservedPropNames = {
@@ -284,7 +273,7 @@ function createComponent(defObj: ComponentDefType | Function, options: Component
 }
 
 function getComponentId(vNode: VirtualNodeType) {
-	let id = getAttribute(vNode, constants.ATTR_COMPONENT_ID);
+	let id = getAttribute(vNode, ATTR_COMPONENT_ID);
 
 	if (id) return id;
 
@@ -330,6 +319,11 @@ function makeComponentTree(instance: ComponentType, parentId: string | null) {
 }
 
 function getPublicInstance(uid: number, key: any, componentFactory: StatefullComponentFactoryType) {
+
+	if (getComponentTree(uid)['0']) {
+		return getComponentTree(uid)['0'].instance;
+	}
+
 	return componentFactory.createInstance();
 }
 

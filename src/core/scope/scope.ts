@@ -37,7 +37,6 @@ const setCurrentMountedComponentId = (id: string | null) => scope.currentMounted
 const getCurrentEventTargetId = () => scope.currentEventTargetId;
 const setCurrentEventTargetId = (id: string | null) => scope.currentEventTargetId = id;
 
-
 function createScope(): ScopeType {
 	return {
 		registery: new Map(),
@@ -60,7 +59,6 @@ function createApp(nativeElement: HTMLElement): AppType {
 		queue: []
 	}
 }
-
 
 export {
 	ScopeType,

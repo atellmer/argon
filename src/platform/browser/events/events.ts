@@ -3,15 +3,15 @@ import {
 	getRegistery,
 	getCurrentEventTargetId,
 	setCurrentEventTargetId,
-} from '../../../core/scope';
+} from '../../../core/scope/scope';
 import {
 	EVENT_HANDLER_REPLACER,
 	ATTR_COMPONENT_ID,
 	VDOM_ELEMENT_TYPES,
 	$$eventHandlers
-} from '../../../core/constants';
-import { getComponentTree } from '../../../core/component';
-import { getDOMElementRoute } from '../dom';
+} from '../../../core/constants/constants';
+import { getComponentTree } from '../../../core/component/component';
+import { getDOMElementRoute } from '../dom/dom';
 
 
 function makeEvents(vNode: VirtualNodeType, instanceID: string, uid: number) {
@@ -91,7 +91,6 @@ function delegateEvent(rootEl: HTMLElement, uid: number, key: string, nodeID: st
 
 	app.eventHandlers[key][eventName].addEvent();
 }
-
 
 export {
 	makeEvents,

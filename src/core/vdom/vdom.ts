@@ -1,5 +1,4 @@
-import { HashMap } from "../shared";
-import * as constants from "../constants";
+import { HashMap } from '../shared';
 import {
   $$id,
   STATEFULL_COMPONENT_REPLACER,
@@ -15,17 +14,19 @@ import {
   NODE_LIST,
   NODE_LIST_REPLACER,
   ATTR_COMPONENT_ID,
-  ATTR_KEY,
+	ATTR_KEY,
+	ATTR_DONT_UPDATE_NODE,
+	ATTR_PORTAL_ID,
   VDOM_ELEMENT_TYPES,
   VDOM_ACTIONS,
   QUEUE_EVENTS
-} from "../constants";
-import { isEmpty, isFunction, deepClone } from "../../helpers";
+} from '../constants';
+import { isEmpty, isFunction, deepClone } from '../../helpers';
 import {
   getUIDActive,
   getRegistery,
   getCurrentMountedComponentId
-} from "../scope";
+} from '../scope';
 import {
   StatefullComponentFactoryType,
   StatelessComponentFactoryType,
@@ -33,9 +34,10 @@ import {
   getComponentId,
   getPublicInstance,
   wire
-} from "../component";
+} from '../component';
 
-type VirtualNodeTagType = "TAG" | "TEXT" | "COMMENT";
+
+type VirtualNodeTagType = 'TAG' | 'TEXT' | 'COMMENT';
 
 type VirtualNodeType = {
   isVirtualNode: boolean;
@@ -51,12 +53,12 @@ type VirtualNodeType = {
 };
 
 type VirtualDOMActionsType =
-  | "ADD_NODE"
-  | "REMOVE_NODE"
-  | "REPLACE_NODE"
-  | "ADD_ATTRIBUTE"
-  | "REMOVE_ATTRIBUTE"
-  | "REPLACE_ATTRIBUTE";
+  | 'ADD_NODE'
+  | 'REMOVE_NODE'
+  | 'REPLACE_NODE'
+  | 'ADD_ATTRIBUTE'
+  | 'REMOVE_ATTRIBUTE'
+  | 'REPLACE_ATTRIBUTE';
 
 type VirtualDOMDiffType = {
   action: VirtualDOMActionsType;
@@ -67,13 +69,13 @@ type VirtualDOMDiffType = {
 
 type ElementReplacerType<T> = {
   type:
-    | "NODE"
-    | "NODE_LIST"
-    | "STATEFULL_COMPONENT"
-    | "STATEFULL_COMPONENT_LIST"
-    | "STATELESS_COMPONENT"
-    | "STATELESS_COMPONENT_LIST"
-    | "QUEUE_EVENTS";
+    | 'NODE'
+    | 'NODE_LIST'
+    | 'STATEFULL_COMPONENT'
+    | 'STATEFULL_COMPONENT_LIST'
+    | 'STATELESS_COMPONENT'
+    | 'STATELESS_COMPONENT_LIST'
+    | 'QUEUE_EVENTS';
   value: T;
 };
 
@@ -139,7 +141,7 @@ function createCommentNode(content: string): VirtualNodeType {
 
 function createElement(tag: string): VirtualNodeType {
   let tagReplaced = false;
-  let key = "";
+  let key = '';
   const element = {
     isVirtualNode: true,
     type: VDOM_ELEMENT_TYPES.TAG as VirtualNodeTagType,
@@ -153,7 +155,7 @@ function createElement(tag: string): VirtualNodeType {
 
   const replaceTag = (match: string) => {
     if (!tagReplaced) {
-      if (voidTagsMap[match] || tag[tag.length - 2] === "/") {
+      if (voidTagsMap[match] || tag[tag.length - 2] === '/') {
         element.void = true;
       }
 
@@ -168,7 +170,7 @@ function createElement(tag: string): VirtualNodeType {
       element.attrs[key] = match.replace(/["]/g, "");
     }
 
-    return "";
+    return '';
   };
 
   if (commentPattern.test(tag)) {
@@ -192,7 +194,7 @@ function createVirtualDOMFromSource(source: string): Array<VirtualNodeType> {
   let element = null;
   let level = -1;
   const replaceSource = (tag: string, idx: number) => {
-    const isOpen = tag[1] !== "/";
+    const isOpen = tag[1] !== '/';
     const nextIdx = idx + tag.length;
     const nextChar = source[nextIdx];
     let parent = null;
@@ -201,8 +203,8 @@ function createVirtualDOMFromSource(source: string): Array<VirtualNodeType> {
       level++;
       element = createElement(tag);
 
-      if (element.void === false && nextChar && nextChar !== "<") {
-        const content = source.slice(nextIdx, source.indexOf("<", nextIdx));
+      if (element.void === false && nextChar && nextChar !== '<') {
+        const content = source.slice(nextIdx, source.indexOf('<', nextIdx));
 
         element.children.push(createTextNode(content));
       }
@@ -223,10 +225,10 @@ function createVirtualDOMFromSource(source: string): Array<VirtualNodeType> {
     if (!isOpen || element.void === true) {
       level--;
 
-      if (nextChar !== "<" && nextChar) {
+      if (nextChar !== '<' && nextChar) {
         parent = level === -1 ? result : buffer[level].children;
 
-        const end = source.indexOf("<", nextIdx);
+        const end = source.indexOf('<', nextIdx);
         const content = source.slice(nextIdx, end === -1 ? undefined : end);
 
         if (!textPattern.test(content)) {
@@ -235,7 +237,7 @@ function createVirtualDOMFromSource(source: string): Array<VirtualNodeType> {
       }
     }
 
-    return "";
+    return '';
   };
 
   source.replace(tagPattern, replaceSource);
@@ -284,7 +286,7 @@ function removeAttribute(vNode: VirtualNodeType, name: string) {
 }
 
 function getNodeKey(vNode: VirtualNodeType): string {
-  return getAttribute(vNode, constants.ATTR_KEY);
+  return getAttribute(vNode, ATTR_KEY);
 }
 
 function getVirtualDOMDiff(
@@ -297,7 +299,6 @@ function getVirtualDOMDiff(
   level: number = 0,
   idx: number = 0
 ): Array<VirtualDOMDiffType> {
-  const { ATTR_DONT_UPDATE_NODE, ATTR_PORTAL_ID } = constants;
   let diff = [...prevDiff];
 	const route = [...prevRoute];
 	const key = getNodeKey(VDOM);
@@ -335,9 +336,7 @@ function getVirtualDOMDiff(
     VDOM.name !== nextVDOM.name ||
     VDOM.content !== nextVDOM.content
   ) {
-    diff.push(
-      createDiffAction(VDOM_ACTIONS.REPLACE_NODE, route, VDOM, nextVDOM)
-    );
+    diff.push(createDiffAction(VDOM_ACTIONS.REPLACE_NODE, route, VDOM, nextVDOM));
     return diff;
   } else {
     if (VDOM.attrs && nextVDOM.attrs) {
@@ -474,8 +473,7 @@ function mountVirtualDOM(
 
     if (textContent === NODE_REPLACER) {
       const findElementFn = (e: ElementReplacerType<VirtualNodeType>) => e.type === NODE;
-      const findVNodeFn = (vNode: VirtualNodeType) =>
-        vNode.type === VDOM_ELEMENT_TYPES.COMMENT && vNode.content === NODE_REPLACER;
+      const findVNodeFn = (vNode: VirtualNodeType) => vNode.type === VDOM_ELEMENT_TYPES.COMMENT && vNode.content === NODE_REPLACER;
       const elementIdx = elements.findIndex(findElementFn);
       const vNodeIdx = parentVNode.children.findIndex(findVNodeFn);
       const nextVNode = elements[elementIdx].value;
@@ -483,8 +481,7 @@ function mountVirtualDOM(
       elements.splice(elementIdx, 1);
       parentVNode.children[vNodeIdx] = nextVNode;
     } else if (textContent === NODE_LIST_REPLACER) {
-      const findElementFn = (e: ElementReplacerType<Array<HTMLElement>>) =>
-        e.type === NODE_LIST;
+      const findElementFn = (e: ElementReplacerType<Array<HTMLElement>>) => e.type === NODE_LIST;
       const findVNodeFn = (vNode: VirtualNodeType) =>
         vNode.type === VDOM_ELEMENT_TYPES.COMMENT && vNode.content === NODE_LIST_REPLACER;
       const elementIdx = elements.findIndex(findElementFn);
@@ -496,10 +493,8 @@ function mountVirtualDOM(
       nodeList.forEach(mapNodesFn);
       parentVNode.children.splice(vNodeIdx, 1);
     } else if (textContent === STATEFULL_COMPONENT_REPLACER) {
-      const findElementFn = (e: ElementReplacerType<StatefullComponentFactoryType>) => 
-        e.type === STATEFULL_COMPONENT;
-      const findVNodeFn = (n: VirtualNodeType) =>
-        n.type === VDOM_ELEMENT_TYPES.COMMENT && n.content === STATEFULL_COMPONENT_REPLACER;
+      const findElementFn = (e: ElementReplacerType<StatefullComponentFactoryType>) =>  e.type === STATEFULL_COMPONENT;
+      const findVNodeFn = (n: VirtualNodeType) => n.type === VDOM_ELEMENT_TYPES.COMMENT && n.content === STATEFULL_COMPONENT_REPLACER;
       const elementIdx = elements.findIndex(findElementFn);
       const vNodeIdx = parentVNode ? parentVNode.children.findIndex(findVNodeFn) : 0;
       const componentFactory = elements[elementIdx].value as StatefullComponentFactoryType;
@@ -517,10 +512,8 @@ function mountVirtualDOM(
         mountedVNode = nextVNode;
       }
     } else if (textContent === STATEFULL_COMPONENT_LIST_REPLACER) {
-      const findElementFn = (e: ElementReplacerType<Array<StatefullComponentFactoryType>>) => 
-        e.type === STATEFULL_COMPONENT_LIST;
-      const findVNodeFn = (vNode: VirtualNodeType) => 
-        vNode.type === VDOM_ELEMENT_TYPES.COMMENT && vNode.content === STATEFULL_COMPONENT_LIST_REPLACER;
+      const findElementFn = (e: ElementReplacerType<Array<StatefullComponentFactoryType>>) => e.type === STATEFULL_COMPONENT_LIST;
+      const findVNodeFn = (vNode: VirtualNodeType) => vNode.type === VDOM_ELEMENT_TYPES.COMMENT && vNode.content === STATEFULL_COMPONENT_LIST_REPLACER;
       const id = getCurrentMountedComponentId();
       const vdom = getVirtualDOM(uid);
       const elementIdx = elements.findIndex(findElementFn);
@@ -592,8 +585,7 @@ function mountVirtualDOM(
       parentVNode.children.splice(vNodeIdx, 1);
     } else if (textContent === STATELESS_COMPONENT_REPLACER) {
       const findElementFn = (e: ElementReplacerType<VirtualNodeType>) => e.type === STATELESS_COMPONENT;
-      const findVNodeFn = (vNode: VirtualNodeType) =>
-        vNode.type === VDOM_ELEMENT_TYPES.COMMENT && vNode.content === STATELESS_COMPONENT_REPLACER;
+      const findVNodeFn = (vNode: VirtualNodeType) => vNode.type === VDOM_ELEMENT_TYPES.COMMENT && vNode.content === STATELESS_COMPONENT_REPLACER;
       const elementIdx = elements.findIndex(findElementFn);
       const vNodeIdx = parentVNode.children.findIndex(findVNodeFn);
       const factory = elements[elementIdx].value as StatelessComponentFactoryType;
@@ -606,8 +598,7 @@ function mountVirtualDOM(
       queueEvents.forEach(fn => fn());
     } else if (textContent === STATELESS_COMPONENT_LIST_REPLACER) {
       const findElementFn = (e: ElementReplacerType<Array<HTMLElement>>) => e.type === STATELESS_COMPONENT_LIST;
-      const findVNodeFn = (vNode: VirtualNodeType) =>
-        vNode.type === VDOM_ELEMENT_TYPES.COMMENT && vNode.content === STATELESS_COMPONENT_LIST_REPLACER;
+      const findVNodeFn = (vNode: VirtualNodeType) => vNode.type === VDOM_ELEMENT_TYPES.COMMENT && vNode.content === STATELESS_COMPONENT_LIST_REPLACER;
       const elementIdx = elements.findIndex(findElementFn);
       const vNodeIdx = parentVNode.children.findIndex(findVNodeFn);
       const factoryList = elements[elementIdx].value;
@@ -628,7 +619,8 @@ function mountVirtualDOM(
     }
   }
 
-  const mapChildNodesFn = (vNode: VirtualNodeType) => mountVirtualDOM(vNode, elements, mountedVNode);
+	const mapChildNodesFn = (vNode: VirtualNodeType) => mountVirtualDOM(vNode, elements, mountedVNode);
+
   children.forEach(mapChildNodesFn);
 
   return mountedVNode;
@@ -639,8 +631,6 @@ function getRootParentVirtualNode(
   vNode: VirtualNodeType,
   parentVNode: VirtualNodeType = null
 ): VirtualNodeType {
-  const { ATTR_COMPONENT_ID } = constants;
-
   if (getAttribute(vNode, ATTR_COMPONENT_ID) === id) {
     return parentVNode;
   }
@@ -660,11 +650,9 @@ function getComponentVirtualNodeById(
   id: string,
   vNode: VirtualNodeType
 ): VirtualNodeType {
-  const { ATTR_COMPONENT_ID } = constants;
-
   if (Object.keys(vNode).length === 0) return null;
 
-  const compareId = getAttribute(vNode, ATTR_COMPONENT_ID) || "";
+  const compareId = getAttribute(vNode, ATTR_COMPONENT_ID) || '';
 
   if (Boolean(compareId === id)) return vNode;
 
@@ -696,4 +684,4 @@ export {
   buildVirtualNodeWithRoutes,
   getComponentVirtualNodeById,
   mountVirtualDOM
-};
+}

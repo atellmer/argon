@@ -6,14 +6,15 @@ import {
 	getComponentTree,
 	unmountComponent,
 	getComponentId
-} from '../../../core/component';
+} from '../../../core/component/component';
 import {
+	AppType,
 	getUIDActive,
 	getRegistery,
 	getCurrentMountedComponentId,
 	setCurrentMountedComponentId,
 	setUIDActive
-} from '../../../core/scope';
+} from '../../../core/scope/scope';
 import {
 	isObject,
 	isEmpty,
@@ -50,7 +51,7 @@ import {
 	ATTR_COMPONENT_NAME,
 	ATTR_KEY,
 	VDOM_ACTIONS
-} from '../../../core/constants';
+} from '../../../core/constants/constants';
 import {
 	VirtualNodeType,
 	VirtualDOMActionsType,
@@ -64,25 +65,18 @@ import {
 	setAttribute,
 	getVirtualDOMDiff,
 	isVirtualNode
-} from '../../../core/vdom';
-import { makeEvents } from '../events';
+} from '../../../core/vdom/vdom';
+import { makeEvents } from '../events/events';
 
 
-function dom(string: TemplateStringsArray, ...args: Array<any>) {
-	const uid = getUIDActive();
-	const app = getRegistery().get(uid);
+function transformTemplateStringToVirtualDOM(string: TemplateStringsArray, args: Array<any>, uid: number, app: AppType, instance: ComponentType) {
 	const separator = NODE_SEPARATOR;
 	const elements: Array<ElementReplacerType<any>> = [];
-	const componentTree: ComponentTreeType = getComponentTree(uid);
-	const id = getCurrentMountedComponentId();
 	let markup = string.join(separator);
 	let sourceVNode = null;
 	let vNode: VirtualNodeType = null;
-	const componentTreeNode = componentTree[id];
-	const instance = componentTreeNode.instance;
 	const isStatefullComponent = (o: StatefullComponentFactoryType) => isObject(o) && !isEmpty(o) && (o as StatefullComponentFactoryType).isStatefullComponent === true;
 	const isStatelessComponent = (o: StatelessComponentFactoryType) => isObject(o) && !isEmpty(o) && (o as StatelessComponentFactoryType).isStatelessComponent === true;
-	const markedArgs = [];
 	const eventMap = new Map();
 	
 	const mapArgsFn = (arg: any, argIdx: number) => {
@@ -113,12 +107,13 @@ function dom(string: TemplateStringsArray, ...args: Array<any>) {
 			elements.push({ type: NODE, value: arg });
 		} else if (isArray(arg) && isVirtualNode(arg[0])) {
 			replacer = `<!--${NODE_LIST_REPLACER}-->`;
-			elements.push({ type: NODE_LIST, value: arg  });
+			elements.push({ type: NODE_LIST, value: arg });
 		} else if (isFunction(arg)) {
 			if (!isRef(arg)) {
 				replacer = EVENT_HANDLER_REPLACER;
-				const sliced = args.slice(0, argIdx).reverse();
-				const stateless = sliced.find(a => isArray(a) ? isStatelessComponent(a[0]) : isStatelessComponent(a));
+				const findFactoryFn = (a: any) => isArray(a) ? isStatelessComponent(a[0]) : isStatelessComponent(a);
+				const slicedArgs = args.slice(0, argIdx).reverse();
+				const stateless = slicedArgs.find(findFactoryFn);
 				
 				if (stateless) {
 					const fn = isArray(stateless) ? stateless[0] : stateless;
@@ -152,6 +147,18 @@ function dom(string: TemplateStringsArray, ...args: Array<any>) {
 	sourceVNode = sourceVNode.length > 1 ? sourceVNode : sourceVNode[0];
 
 	vNode = mountVirtualDOM(sourceVNode, elements);
+
+	return vNode;
+}
+
+function dom(string: TemplateStringsArray, ...args: Array<any>): VirtualNodeType {
+	const uid = getUIDActive();
+	const app = getRegistery().get(uid);
+	const componentTree: ComponentTreeType = getComponentTree(uid);
+	const id = getCurrentMountedComponentId();
+	const componentTreeNode = componentTree[id];
+	const instance = componentTreeNode.instance;
+	const vNode = transformTemplateStringToVirtualDOM(string, args, uid, app, instance);
 
 	return vNode;
 }
@@ -203,9 +210,8 @@ function mount(vdom: VirtualNodeType | Array<VirtualNodeType>, parentNode: HTMLE
 	}
 
 	if (isArray(vdom)) {
-		for(let vNode of vdom) {
-			mapVDOM(vNode);
-		}
+		const mapVNodeFn = (vNode: VirtualNodeType) => mapVDOM(vNode);
+		(vdom as Array<VirtualNodeType>).forEach(mapVNodeFn);
 	} else {
 		mapVDOM(vdom as VirtualNodeType);
 	}
@@ -259,9 +265,7 @@ function getNodeByRoute($parentNode: HTMLElement, action: VirtualDOMActionsType,
 
 function patchDOM(diff: Array<VirtualDOMDiffType>, $node: HTMLElement, uid: number, includePortals = false) {
 	const mapDiff = (diffElement: VirtualDOMDiffType) => {
-		if (includePortals) {
-			diffElement.route.unshift(0);
-		}
+		if (includePortals) diffElement.route.unshift(0);
 
 		const node = getNodeByRoute($node, diffElement.action, diffElement.route);
 
@@ -321,18 +325,12 @@ function processDOM(id: string, uid: number, mountedVNode: VirtualNodeType = nul
 	const parentVNode = parentId ? getComponentVirtualNodeById(parentId, vdom) : null;
 	const findNodeFn = (vNode: VirtualNodeType) => vNode === oldVNode;
 	const idx = parentVNode ? parentVNode.children.findIndex(findNodeFn) : 0;
-
 	let newVNode = mountedNextVNode || instance.render();
-
-	app.queue.push(() => {
-		makeEvents(newVNode, id, uid);
-	});
-
 	const prevRoute = [...oldVNode.route];
 
+	app.queue.push(() => makeEvents(newVNode, id, uid));
 	newVNode = buildVirtualNodeWithRoutes(newVNode, prevRoute, prevRoute.length, 0, true);
 	app.queue.forEach(fn => fn());
-
 	app.queue = [];
 
 	if (newVNode.type === VDOM_ELEMENT_TYPES.TAG) {
@@ -343,7 +341,7 @@ function processDOM(id: string, uid: number, mountedVNode: VirtualNodeType = nul
 
 	const diff = getVirtualDOMDiff(oldVNode, newVNode, includePortals);
 
-	console.log('[diff]', diff)
+	//console.log('[diff]', diff)
 
 	patchDOM(diff, $node, uid, includePortals);
 
