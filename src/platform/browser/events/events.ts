@@ -14,9 +14,9 @@ import { getComponentTree } from '../../../core/component/component';
 import { getDOMElementRoute } from '../dom/dom';
 
 
-function makeEvents(vNode: VirtualNodeType, instanceID: string, uid: number) {
+function makeEvents(vNode: VirtualNodeType, instanceId: string, uid: number) {
 	const app = getRegistery().get(uid);
-	const instance = getComponentTree(uid)[instanceID].instance;
+	const { instance } = getComponentTree(uid)[instanceId];
 	const rootEl = app.nativeElement;
 
 	if (vNode.type === VDOM_ELEMENT_TYPES.TAG) {
@@ -26,12 +26,12 @@ function makeEvents(vNode: VirtualNodeType, instanceID: string, uid: number) {
 		const chidren = vNode.children.filter(filterNodeFn);
 		const mapAttrsFn = (attrName: string) => {
 			if (vNode.attrs[attrName] === EVENT_HANDLER_REPLACER && /^on:/.test(attrName)) {
-				const nodeID = vNode.route.join('.');
-				const key = `${instanceID}:${nodeID}`;
+				const nodeId = vNode.route.join('.');
+				const key = `${instanceId}:${nodeId}`;
 				const eventName = attrName.slice(3, attrName.length);
-				const savedHandler = instance[$$eventHandlers][0];
+				const handler = instance[$$eventHandlers][0];
 
-				delegateEvent(rootEl, uid, key, nodeID, eventName, savedHandler);
+				delegateEvent(rootEl, uid, key, nodeId, eventName, handler);
 				instance[$$eventHandlers].splice(0, 1);
 				delete vNode.attrs[attrName];
 			}
@@ -40,7 +40,7 @@ function makeEvents(vNode: VirtualNodeType, instanceID: string, uid: number) {
 			const componentId = vNode.attrs[ATTR_COMPONENT_ID];
 			const isComponentNode = Boolean(componentId);
 
-			!isComponentNode && makeEvents(vNode, instanceID, uid);
+			!isComponentNode && makeEvents(vNode, instanceId, uid);
 		};
 
 		attrNames.forEach(mapAttrsFn);
@@ -48,7 +48,7 @@ function makeEvents(vNode: VirtualNodeType, instanceID: string, uid: number) {
 	}
 }
 
-function delegateEvent(rootEl: HTMLElement, uid: number, key: string, nodeID: string, eventName: string, handler: (e: Event) => void) {
+function delegateEvent(rootEl: HTMLElement, uid: number, key: string, nodeId: string, eventName: string, handler: (e: Event) => void) {
 	const app = getRegistery().get(uid);
 	const eventHandler = (e: Event) => {
 		let { targetId, handlerIdx } = getCurrentEventData();
@@ -72,7 +72,7 @@ function delegateEvent(rootEl: HTMLElement, uid: number, key: string, nodeID: st
 
 		const { handlersCount } = getCurrentEventData();
 
-		if (nodeID === targetId) {
+		if (nodeId === targetId) {
 			handler(e);
 			resetEventData();
 			return;
