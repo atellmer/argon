@@ -462,7 +462,7 @@ function mountVirtualDOM(
   mountedVNode: VirtualNodeType,
   elements: Array<ElementReplacerType<any>>,
 	parentVNode: VirtualNodeType = null,
-): VirtualNodeType | Array<VirtualNodeType> {
+): VirtualNodeType {
   const uid = getUIDActive();
   const isBlockNode = mountedVNode.type === VDOM_ELEMENT_TYPES.TAG;
   const isCommentNode = mountedVNode.type === VDOM_ELEMENT_TYPES.COMMENT;

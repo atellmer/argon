@@ -49,7 +49,7 @@ type ComponentDefType = {
 		ref?: (c: ComponentType) => void;
 	};
 	state?: {};
-	render: () => VirtualNodeType | Array<VirtualNodeType> | null;
+	render: () => VirtualNodeType | null;
 	getInitialState?: () => any;
 	getDefaultProps?: () => any;
 	willMount?: () => void;

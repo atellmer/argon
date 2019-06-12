@@ -73,15 +73,14 @@ import {
 	removeAttribute
 } from '../../../core/vdom/vdom';
 import { makeEvents } from '../events/events';
-import { getIsFragment } from '../fragment/fragment';
 
 
-function transformTemplateStringToVirtualDOM(string: TemplateStringsArray, args: Array<any>, uid: number, app: AppType, instance: ComponentType): VirtualNodeType | Array<VirtualNodeType> {
+function transformTemplateStringToVirtualDOM(string: TemplateStringsArray, args: Array<any>, uid: number, app: AppType, instance: ComponentType): VirtualNodeType {
 	const separator = NODE_SEPARATOR;
 	const elements: Array<ElementReplacerType<any>> = [];
 	let markup = string.join(separator);
 	let sourceVNode = null;
-	let vNode: VirtualNodeType | Array<VirtualNodeType> = null;
+	let vNode: VirtualNodeType = null;
 	const isStatefullComponent = (o: StatefullComponentFactoryType) => isObject(o) && !isEmpty(o) && (o as StatefullComponentFactoryType).isStatefullComponent === true;
 	const isStatelessComponent = (o: StatelessComponentFactoryType) => isObject(o) && !isEmpty(o) && (o as StatelessComponentFactoryType).isStatelessComponent === true;
 	const eventMap = new Map();
@@ -188,7 +187,7 @@ function transformTemplateStringToVirtualDOM(string: TemplateStringsArray, args:
 	return vNode;
 }
 
-function dom(string: TemplateStringsArray, ...args: Array<any>): VirtualNodeType | Array<VirtualNodeType> {
+function dom(string: TemplateStringsArray, ...args: Array<any>): VirtualNodeType {
 	const uid = getUIDActive();
 	const app = getRegistery().get(uid);
 	const componentTree: ComponentTreeType = getComponentTree(uid);
@@ -227,8 +226,16 @@ function mount(vdom: VirtualNodeType | Array<VirtualNodeType>, parentNode: HTMLE
 			}
 
 			if (isContainerExists) {
-				container.appendChild(DOMElement);
-				!vNode.void && container.appendChild(mount(vNode.children, DOMElement));
+				if (DOMElement.getAttribute('fragment')) {
+					const node = mount(vNode.children, DOMElement) as HTMLElement;
+					Array.from(node.childNodes).forEach(node => container.appendChild(node));
+				} else {
+					container.appendChild(DOMElement);
+					if (!vNode.void) {
+						const node = mount(vNode.children, DOMElement) as HTMLElement;
+						!vNode.void && container.appendChild(node);
+					}
+				}
 			} else {
 				container = DOMElement;
 				container = mount(vNode.children, container);
@@ -323,7 +330,28 @@ function patchDOM(diff: Array<VirtualDOMDiffType>, $node: HTMLElement, uid: numb
 			const newNode = mount(diffElement.nextValue as VirtualNodeType);
 			const componentId = getComponentId(diffElement.oldValue as VirtualNodeType);
 			componentId && unmountComponent(componentId, uid);
-			node.replaceWith(newNode);
+			
+			//console.log('node', newNode.cloneNode(true))
+			if (newNode.nodeType === Node.ELEMENT_NODE && (newNode as HTMLElement).getAttribute('fragment')) {
+
+				console.log('node', node.cloneNode(true))
+				if (node.nodeType === Node.COMMENT_NODE && node.textContent === EMPTY_REPLACER) {
+					node.replaceWith(...Array.from(newNode.childNodes));
+
+				}
+			} else {
+				if (getAttribute(diffElement.oldValue as VirtualNodeType, 'fragment')) {
+					const value = diffElement.oldValue as VirtualNodeType;
+					const location = value.route[value.route.length - 1];
+					$node.insertBefore(document.createComment(EMPTY_REPLACER), $node.childNodes[location]);
+					value.children.forEach(_ => {
+						const replaced = $node.childNodes[location + 1];
+						$node.removeChild(replaced);
+					});
+				} else {
+					node.replaceWith(newNode);
+				}
+			}
 		} else if (diffElement.action === VDOM_ACTIONS.ADD_ATTRIBUTE) {
 			const mapAttrs = (attrName: string) => node.setAttribute(attrName, diffElement.nextValue[attrName]);
 			Object.keys(diffElement.nextValue).forEach(mapAttrs);
@@ -391,7 +419,7 @@ function processDOM(id: string, uid: number, mountedVNode: VirtualNodeType = nul
 
 	const diff = getVirtualDOMDiff(oldVNode, newVNode, includePortals);
 
-	//console.log('[diff]', diff)
+	console.log('[diff]', diff)
 
 	patchDOM(diff, $node, uid, includePortals);
 

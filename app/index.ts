@@ -1,6 +1,15 @@
 import * as Argon from '../src';
 
 
+const Content = Argon.createComponent(() => {
+	return Argon.dom`
+		<div fragment="true">
+			<div>Content 1</div>
+			<div>Content 2</div>
+		</div>
+	`
+})
+
 
 const Item = Argon.createComponent(({ id, onRemove }) => {
 	return Argon.dom`
@@ -32,7 +41,10 @@ const App = Argon.createComponent({
 
 		return Argon.dom`
 			<div>
-				${items.map(x => Item({key: x, id: x, onRemove: this.handleRemove}))}
+				${isOpen && Content()}
+				<div>item 1</div>
+				<div>item 2</div>
+				${isOpen && Content()}
 			</<div>
 		`;
 	}
@@ -40,12 +52,22 @@ const App = Argon.createComponent({
 
 Argon.renderComponent(App({ isOpen: false }), document.getElementById('app'));
 
-/*
 setTimeout(() => {
 	Argon.renderComponent(App({ isOpen: true }), document.getElementById('app'));
-}, 1000)*/
+}, 1000)
 
-/*
 setTimeout(() => {
 	Argon.renderComponent(App({ isOpen: false }), document.getElementById('app'));
-}, 2000)*/
+}, 2000)
+
+
+setTimeout(() => {
+	Argon.renderComponent(App({ isOpen: true }), document.getElementById('app'));
+}, 3000)
+
+
+
+
+
+
+
