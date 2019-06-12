@@ -466,10 +466,11 @@ function mountVirtualDOM(
   const uid = getUIDActive();
   const isBlockNode = mountedVNode.type === VDOM_ELEMENT_TYPES.TAG;
   const isCommentNode = mountedVNode.type === VDOM_ELEMENT_TYPES.COMMENT;
-  const children = isBlockNode ? mountedVNode.children : [];
+	const children = isBlockNode ? [...mountedVNode.children] : [];
+	
 
   if (isCommentNode) {
-    const textContent = mountedVNode.content;
+		const textContent = mountedVNode.content;
 
     if (textContent === NODE_REPLACER) {
       const findElementFn = (e: ElementReplacerType<VirtualNodeType>) => e.type === NODE;
@@ -547,8 +548,7 @@ function mountVirtualDOM(
         componentFactory: StatefullComponentFactoryType,
         idx: number
       ) => {
-        const runComponent = () =>
-          parentVNode.children.push(wire(componentFactory));
+        const runComponent = () => parentVNode.children.push(wire(componentFactory)); //TODO replace push
 
         if (componentFactory.config.pure) {
           const elementIdx = idx + shift;
@@ -584,38 +584,42 @@ function mountVirtualDOM(
       componentFactoryList.forEach(mapFactoryList);
       parentVNode.children.splice(vNodeIdx, 1);
     } else if (textContent === STATELESS_COMPONENT_REPLACER) {
-      const findElementFn = (e: ElementReplacerType<VirtualNodeType>) => e.type === STATELESS_COMPONENT;
+			const findElementFn = (e: ElementReplacerType<VirtualNodeType>) => e.type === STATELESS_COMPONENT;
       const findVNodeFn = (vNode: VirtualNodeType) => vNode.type === VDOM_ELEMENT_TYPES.COMMENT && vNode.content === STATELESS_COMPONENT_REPLACER;
-      const elementIdx = elements.findIndex(findElementFn);
+			const findQueueEventsFn = (e: ElementReplacerType<VirtualNodeType>) => e.type === QUEUE_EVENTS;
+			const mapFns = (fn: Function) => fn();
+			const elementIdx = elements.findIndex(findElementFn);
       const vNodeIdx = parentVNode.children.findIndex(findVNodeFn);
       const factory = elements[elementIdx].value as StatelessComponentFactoryType;
       const nextVNode = factory.createElement();
-      const queueEventsIdx = elements.findIndex(e => e.type === QUEUE_EVENTS);
+      const queueEventsIdx = elements.findIndex(findQueueEventsFn);
       const queueEvents = elements[queueEventsIdx].value.get(factory) || [];
 
       elements.splice(elementIdx, 1);
-      parentVNode.children[vNodeIdx] = nextVNode;
-      queueEvents.forEach(fn => fn());
+			parentVNode.children[vNodeIdx] = nextVNode;
+			queueEvents.forEach(mapFns);
     } else if (textContent === STATELESS_COMPONENT_LIST_REPLACER) {
       const findElementFn = (e: ElementReplacerType<Array<HTMLElement>>) => e.type === STATELESS_COMPONENT_LIST;
-      const findVNodeFn = (vNode: VirtualNodeType) => vNode.type === VDOM_ELEMENT_TYPES.COMMENT && vNode.content === STATELESS_COMPONENT_LIST_REPLACER;
-      const elementIdx = elements.findIndex(findElementFn);
+			const findVNodeFn = (vNode: VirtualNodeType) => vNode.type === VDOM_ELEMENT_TYPES.COMMENT && vNode.content === STATELESS_COMPONENT_LIST_REPLACER;
+			const findQueueEventsFn = (e: ElementReplacerType<VirtualNodeType>) => e.type === QUEUE_EVENTS;
+			const mapFns = (fn: Function) => fn();
+			const elementIdx = elements.findIndex(findElementFn);
       const vNodeIdx = parentVNode.children.findIndex(findVNodeFn);
       const factoryList = elements[elementIdx].value;
-      const mapFactoryFn = (componentFactory: StatelessComponentFactoryType) => {
+      const queueEventsIdx = elements.findIndex(findQueueEventsFn);
+			const queueEvents = elements[queueEventsIdx].value.get(factoryList[0]) || [];
+			const mapFactoryFn = (componentFactory: StatelessComponentFactoryType, idx: number) => {
 				const createdVNode = componentFactory.createElement();
 				const key = componentFactory.props[ATTR_KEY];
 
 				!isEmpty(key) && setAttribute(createdVNode, ATTR_KEY, key);
-				parentVNode.children.push(createdVNode);
+				parentVNode.children.splice(vNodeIdx + idx, 0, createdVNode);
 			};
-      const queueEventsIdx = elements.findIndex(e => e.type === QUEUE_EVENTS);
-      const queueEvents = elements[queueEventsIdx].value.get(factoryList[0]) || [];
 
-      elements.splice(elementIdx, 1);
+			elements.splice(elementIdx, 1);
+			parentVNode.children.splice(vNodeIdx, 1);
       factoryList.forEach(mapFactoryFn);
-      queueEvents.forEach(fn => fn());
-      parentVNode.children.splice(vNodeIdx, 1);
+			queueEvents.forEach(mapFns);
     }
   }
 

@@ -36,14 +36,7 @@ const App = Argon.createComponent({
 
 		return Argon.dom`
 			<div>
-				<input on:input="${(e) => console.log('value', e.target.value)}" />
-				${isOpen && Content()}
-				<button on:click="${this.handleOpen}">${isOpen ? 'Close' : 'Open'}</button>
-				<div>
-					${items.map(x => Item({key: x, id: x, onRemove: this.handleRemove}))}
-				</div>
-				${isOpen && Content()}
-				<button on:click="${this.handleOpen}">${isOpen ? 'Close' : 'Open'}</button>
+				${items.map(x => Item({key: x, id: x, onRemove: this.handleRemove}))}
 				${isOpen && Content()}
 				<button on:click="${this.handleOpen}">${isOpen ? 'Close' : 'Open'}</button>
 			</div>
