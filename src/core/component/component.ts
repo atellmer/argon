@@ -49,7 +49,7 @@ type ComponentDefType = {
 		ref?: (c: ComponentType) => void;
 	};
 	state?: {};
-	render: () => VirtualNodeType | null;
+	render: () => VirtualNodeType | Array<VirtualNodeType> | null;
 	getInitialState?: () => any;
 	getDefaultProps?: () => any;
 	willMount?: () => void;
@@ -386,9 +386,7 @@ function wire(componentFactory: StatefullComponentFactoryType): VirtualNodeType 
 		vNode = createCommentNode(`${STATEFULL_COMPONENT_REPLACER}:${id}${Boolean(instance.displayName) ? `:${instance.displayName}` : ''}`);
 	}
 
-	app.queue.push(() => {
-		makeEvents(vNode, id, uid);
-	});
+	app.queue.push(() => makeEvents(vNode, id, uid));
 
 	if (instance[$$root]) {
 		vNode = buildVirtualNodeWithRoutes(vNode);

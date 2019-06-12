@@ -1,16 +1,11 @@
 import * as Argon from '../src';
 
 
-const Content = Argon.createComponent(() => {
-	return Argon.dom`
-		<div>Content</div>
-	`;
-})
 
 const Item = Argon.createComponent(({ id, onRemove }) => {
 	return Argon.dom`
 		<div>
-			Item ${id}
+			Item: ${id}
 			<button on:click="${onRemove(id)}">remove</button>
 		</div>
 	`
@@ -32,17 +27,25 @@ const App = Argon.createComponent({
 		this.setState({ isOpen: !this.state.isOpen });
 	},
 	render() {
-		const { isOpen, items } = this.state;
+		const { items } = this.state;
+		const { isOpen } = this.props;
 
 		return Argon.dom`
 			<div>
 				${items.map(x => Item({key: x, id: x, onRemove: this.handleRemove}))}
-				${isOpen && Content()}
-				<button on:click="${this.handleOpen}">${isOpen ? 'Close' : 'Open'}</button>
-			</div>
+			</<div>
 		`;
 	}
 });
 
+Argon.renderComponent(App({ isOpen: false }), document.getElementById('app'));
 
-Argon.renderComponent(App(), document.getElementById('app'));
+/*
+setTimeout(() => {
+	Argon.renderComponent(App({ isOpen: true }), document.getElementById('app'));
+}, 1000)*/
+
+/*
+setTimeout(() => {
+	Argon.renderComponent(App({ isOpen: false }), document.getElementById('app'));
+}, 2000)*/

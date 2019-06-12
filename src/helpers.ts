@@ -86,6 +86,19 @@ function deepClone(obj: any) {
 	return copyObj;
 }
 
+function flatten(arr: Array<any>): Array<any> {
+	const list = arr.reduce((acc, el) => {
+		if (isArray(el)) {
+			acc.push(...(el as any));
+		} else {
+			acc.push(el);
+		}
+
+		return acc;
+	}, []);
+
+	return list;
+}
 
 export {
 	isFunction,
@@ -100,5 +113,6 @@ export {
 	sanitize,
 	error,
 	isDOMElement,
-	deepClone
+	deepClone,
+	flatten
 }

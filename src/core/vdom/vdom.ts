@@ -391,7 +391,7 @@ function getVirtualDOMDiff(
 				const key = getNodeKey(childVNode);
 				const nextKey = getNodeKey(childNextVNode);
 
-				if (childVNode.processed) continue;
+				if (childVNode && childVNode.processed) continue;
 
         if (getAttribute(childNextVNode, ATTR_DONT_UPDATE_NODE)) {
           removeAttribute(nextVDOM, ATTR_DONT_UPDATE_NODE);
@@ -411,7 +411,7 @@ function getVirtualDOMDiff(
           )
 				];
 
-				childVNode.processed = true;
+				childVNode && (childVNode.processed = true);
 
 				if (key !== nextKey) {
 					VDOM.children.splice(i, 1);
@@ -461,13 +461,13 @@ function buildVirtualNodeWithRoutes(
 function mountVirtualDOM(
   mountedVNode: VirtualNodeType,
   elements: Array<ElementReplacerType<any>>,
-  parentVNode: VirtualNodeType = null
-): VirtualNodeType {
+	parentVNode: VirtualNodeType = null,
+): VirtualNodeType | Array<VirtualNodeType> {
   const uid = getUIDActive();
   const isBlockNode = mountedVNode.type === VDOM_ELEMENT_TYPES.TAG;
   const isCommentNode = mountedVNode.type === VDOM_ELEMENT_TYPES.COMMENT;
 	const children = isBlockNode ? [...mountedVNode.children] : [];
-	
+	const findQueueEventsFn = (e: ElementReplacerType<VirtualNodeType>) => e.type === QUEUE_EVENTS;
 
   if (isCommentNode) {
 		const textContent = mountedVNode.content;
@@ -476,23 +476,34 @@ function mountVirtualDOM(
       const findElementFn = (e: ElementReplacerType<VirtualNodeType>) => e.type === NODE;
       const findVNodeFn = (vNode: VirtualNodeType) => vNode.type === VDOM_ELEMENT_TYPES.COMMENT && vNode.content === NODE_REPLACER;
       const elementIdx = elements.findIndex(findElementFn);
-      const vNodeIdx = parentVNode.children.findIndex(findVNodeFn);
-      const nextVNode = elements[elementIdx].value;
+      const vNodeIdx = parentVNode && parentVNode.children.findIndex(findVNodeFn);
+			const nextVNode = elements[elementIdx].value;
 
-      elements.splice(elementIdx, 1);
-      parentVNode.children[vNodeIdx] = nextVNode;
+			elements.splice(elementIdx, 1);
+			if (parentVNode) {
+				parentVNode.children[vNodeIdx] = nextVNode
+			} else {
+				return nextVNode;
+			};
     } else if (textContent === NODE_LIST_REPLACER) {
       const findElementFn = (e: ElementReplacerType<Array<HTMLElement>>) => e.type === NODE_LIST;
-      const findVNodeFn = (vNode: VirtualNodeType) =>
-        vNode.type === VDOM_ELEMENT_TYPES.COMMENT && vNode.content === NODE_LIST_REPLACER;
+      const findVNodeFn = (vNode: VirtualNodeType) => vNode.type === VDOM_ELEMENT_TYPES.COMMENT && vNode.content === NODE_LIST_REPLACER;
       const elementIdx = elements.findIndex(findElementFn);
-      const vNodeIdx = parentVNode.children.findIndex(findVNodeFn);
+      const vNodeIdx = parentVNode && parentVNode.children.findIndex(findVNodeFn);
       const nodeList = elements[elementIdx].value;
-      const mapNodesFn = (vNode: VirtualNodeType) => parentVNode.children.push(vNode);
+      const mapNodesFn = (vNode: VirtualNodeType, idx: number) => {
+				parentVNode && parentVNode.children.splice(vNodeIdx + idx, 0, vNode);
+				return vNode;
+			};
 
-      elements.splice(elementIdx, 1);
-      nodeList.forEach(mapNodesFn);
-      parentVNode.children.splice(vNodeIdx, 1);
+			elements.splice(elementIdx, 1);
+
+			if (parentVNode) {
+				parentVNode.children.splice(vNodeIdx, 1);
+				nodeList.forEach(mapNodesFn);
+			} else {
+				return nodeList.map(mapNodesFn);
+			}
     } else if (textContent === STATEFULL_COMPONENT_REPLACER) {
       const findElementFn = (e: ElementReplacerType<StatefullComponentFactoryType>) =>  e.type === STATEFULL_COMPONENT;
       const findVNodeFn = (n: VirtualNodeType) => n.type === VDOM_ELEMENT_TYPES.COMMENT && n.content === STATEFULL_COMPONENT_REPLACER;
@@ -586,25 +597,28 @@ function mountVirtualDOM(
     } else if (textContent === STATELESS_COMPONENT_REPLACER) {
 			const findElementFn = (e: ElementReplacerType<VirtualNodeType>) => e.type === STATELESS_COMPONENT;
       const findVNodeFn = (vNode: VirtualNodeType) => vNode.type === VDOM_ELEMENT_TYPES.COMMENT && vNode.content === STATELESS_COMPONENT_REPLACER;
-			const findQueueEventsFn = (e: ElementReplacerType<VirtualNodeType>) => e.type === QUEUE_EVENTS;
 			const mapFns = (fn: Function) => fn();
 			const elementIdx = elements.findIndex(findElementFn);
-      const vNodeIdx = parentVNode.children.findIndex(findVNodeFn);
+      const vNodeIdx = parentVNode && parentVNode.children.findIndex(findVNodeFn);
       const factory = elements[elementIdx].value as StatelessComponentFactoryType;
       const nextVNode = factory.createElement();
       const queueEventsIdx = elements.findIndex(findQueueEventsFn);
       const queueEvents = elements[queueEventsIdx].value.get(factory) || [];
 
       elements.splice(elementIdx, 1);
-			parentVNode.children[vNodeIdx] = nextVNode;
 			queueEvents.forEach(mapFns);
+
+			if (parentVNode) {
+				parentVNode.children[vNodeIdx] = nextVNode;
+			} else {
+				return nextVNode;
+			}
     } else if (textContent === STATELESS_COMPONENT_LIST_REPLACER) {
       const findElementFn = (e: ElementReplacerType<Array<HTMLElement>>) => e.type === STATELESS_COMPONENT_LIST;
 			const findVNodeFn = (vNode: VirtualNodeType) => vNode.type === VDOM_ELEMENT_TYPES.COMMENT && vNode.content === STATELESS_COMPONENT_LIST_REPLACER;
-			const findQueueEventsFn = (e: ElementReplacerType<VirtualNodeType>) => e.type === QUEUE_EVENTS;
 			const mapFns = (fn: Function) => fn();
 			const elementIdx = elements.findIndex(findElementFn);
-      const vNodeIdx = parentVNode.children.findIndex(findVNodeFn);
+      const vNodeIdx = parentVNode && parentVNode.children.findIndex(findVNodeFn);
       const factoryList = elements[elementIdx].value;
       const queueEventsIdx = elements.findIndex(findQueueEventsFn);
 			const queueEvents = elements[queueEventsIdx].value.get(factoryList[0]) || [];
@@ -613,13 +627,21 @@ function mountVirtualDOM(
 				const key = componentFactory.props[ATTR_KEY];
 
 				!isEmpty(key) && setAttribute(createdVNode, ATTR_KEY, key);
-				parentVNode.children.splice(vNodeIdx + idx, 0, createdVNode);
+				parentVNode && parentVNode.children.splice(vNodeIdx + idx, 0, createdVNode);
+				return createdVNode;
 			};
 
 			elements.splice(elementIdx, 1);
-			parentVNode.children.splice(vNodeIdx, 1);
-      factoryList.forEach(mapFactoryFn);
-			queueEvents.forEach(mapFns);
+
+			if (parentVNode) {
+				parentVNode.children.splice(vNodeIdx, 1);
+				factoryList.forEach(mapFactoryFn);
+				queueEvents.forEach(mapFns);
+			} else {
+				const list = factoryList.map(mapFactoryFn);
+				queueEvents.forEach(mapFns);
+				return list;
+			}
     }
   }
 
@@ -650,10 +672,7 @@ function getRootParentVirtualNode(
   return null;
 }
 
-function getComponentVirtualNodeById(
-  id: string,
-  vNode: VirtualNodeType
-): VirtualNodeType {
+function getComponentVirtualNodeById(id: string,vNode: VirtualNodeType): VirtualNodeType {
   if (Object.keys(vNode).length === 0) return null;
 
   const compareId = getAttribute(vNode, ATTR_COMPONENT_ID) || '';

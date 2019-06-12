@@ -21,7 +21,8 @@ import {
 	isArray,
 	isFunction,
 	isUndefined,
-	deepClone
+	deepClone,
+	flatten
 } from '../../../helpers';
 import { isRef } from '../../../core/ref';
 import {
@@ -47,10 +48,12 @@ import {
 	QUEUE_EVENTS,
 	EMPTY_REPLACER,
 	VDOM_ELEMENT_TYPES,
+	ATTR_ROOT_APP,
 	ATTR_REF,
 	ATTR_COMPONENT_ID,
 	ATTR_COMPONENT_NAME,
 	ATTR_KEY,
+	ATTR_FRAGMENT,
 	VDOM_ACTIONS
 } from '../../../core/constants/constants';
 import {
@@ -65,17 +68,20 @@ import {
 	buildVirtualNodeWithRoutes,
 	setAttribute,
 	getVirtualDOMDiff,
-	isVirtualNode
+	isVirtualNode,
+	getAttribute,
+	removeAttribute
 } from '../../../core/vdom/vdom';
 import { makeEvents } from '../events/events';
+import { getIsFragment } from '../fragment/fragment';
 
 
-function transformTemplateStringToVirtualDOM(string: TemplateStringsArray, args: Array<any>, uid: number, app: AppType, instance: ComponentType) {
+function transformTemplateStringToVirtualDOM(string: TemplateStringsArray, args: Array<any>, uid: number, app: AppType, instance: ComponentType): VirtualNodeType | Array<VirtualNodeType> {
 	const separator = NODE_SEPARATOR;
 	const elements: Array<ElementReplacerType<any>> = [];
 	let markup = string.join(separator);
 	let sourceVNode = null;
-	let vNode: VirtualNodeType = null;
+	let vNode: VirtualNodeType | Array<VirtualNodeType> = null;
 	const isStatefullComponent = (o: StatefullComponentFactoryType) => isObject(o) && !isEmpty(o) && (o as StatefullComponentFactoryType).isStatefullComponent === true;
 	const isStatelessComponent = (o: StatelessComponentFactoryType) => isObject(o) && !isEmpty(o) && (o as StatelessComponentFactoryType).isStatelessComponent === true;
 	const eventMap = new Map();
@@ -147,12 +153,42 @@ function transformTemplateStringToVirtualDOM(string: TemplateStringsArray, args:
 	sourceVNode = createVirtualDOMFromSource(markup);
 	sourceVNode = sourceVNode.length > 1 ? sourceVNode : sourceVNode[0];
 
+	if (isArray(sourceVNode)) {
+		sourceVNode = isArray(sourceVNode) ? sourceVNode : (sourceVNode as VirtualNodeType).children;
+		const transitVNode = [...sourceVNode];
+		const replacers = [NODE_REPLACER, NODE_LIST_REPLACER, STATELESS_COMPONENT_REPLACER, STATELESS_COMPONENT_LIST_REPLACER];
+		const mapNodesFn = (vNode: VirtualNodeType) => {
+			if (vNode.type === VDOM_ELEMENT_TYPES.COMMENT && replacers.includes(vNode.content)) {
+				const findContentFn = (comparedVNode: VirtualNodeType) => comparedVNode.content === vNode.content;
+				const idx = transitVNode.findIndex(findContentFn);
+				const mountedVNode = mountVirtualDOM(vNode, elements, null);
+
+				if (isArray(mountedVNode)) {
+					transitVNode.splice(idx, 1, ...mountedVNode);
+				} else {
+					transitVNode[idx] = mountedVNode;
+				}
+			}
+		};
+
+		sourceVNode.forEach(mapNodesFn);
+		sourceVNode = transitVNode;
+	}
+
 	vNode = mountVirtualDOM(sourceVNode, elements);
+
+	if (!isArray(vNode)) {
+		const flattenChildren = flatten((vNode as VirtualNodeType).children);
+		(vNode as VirtualNodeType).children = flattenChildren;
+	}
+
+	//console.log('elements', [...elements])
+	//console.log('vNode', deepClone(vNode))
 
 	return vNode;
 }
 
-function dom(string: TemplateStringsArray, ...args: Array<any>): VirtualNodeType {
+function dom(string: TemplateStringsArray, ...args: Array<any>): VirtualNodeType | Array<VirtualNodeType> {
 	const uid = getUIDActive();
 	const app = getRegistery().get(uid);
 	const componentTree: ComponentTreeType = getComponentTree(uid);
@@ -169,6 +205,8 @@ function mount(vdom: VirtualNodeType | Array<VirtualNodeType>, parentNode: HTMLE
 	const uid = getUIDActive();
 	const mapVDOM = (vNode: VirtualNodeType) => {
 		if (!vNode) return;
+
+		const isContainerExists = container && container.nodeType === Node.ELEMENT_NODE;
 
 		if (vNode.type === VDOM_ELEMENT_TYPES.TAG) {
 			const DOMElement = document.createElement(vNode.name);
@@ -188,7 +226,7 @@ function mount(vdom: VirtualNodeType | Array<VirtualNodeType>, parentNode: HTMLE
 				DOMElement.removeAttribute(ATTR_REF);
 			}
 
-			if (container) {
+			if (isContainerExists) {
 				container.appendChild(DOMElement);
 				!vNode.void && container.appendChild(mount(vNode.children, DOMElement));
 			} else {
@@ -196,18 +234,22 @@ function mount(vdom: VirtualNodeType | Array<VirtualNodeType>, parentNode: HTMLE
 				container = mount(vNode.children, container);
 			}
 		} else if (vNode.type === VDOM_ELEMENT_TYPES.TEXT) {
-			if (container) {
+			if (isContainerExists) {
 				container.appendChild(document.createTextNode(vNode.content));
 			} else {
 				container = document.createTextNode(vNode.content);
 			}
 		} else if (vNode.type === VDOM_ELEMENT_TYPES.COMMENT) {
-			if (container) {
+			if (isContainerExists) {
 				container.appendChild(document.createComment(vNode.content));
 			} else {
 				container = document.createComment(vNode.content);
 			}
 		}
+	}
+
+	if (!isArray(vdom) && getAttribute(vdom as VirtualNodeType, ATTR_FRAGMENT)) {
+		vdom = (vdom as VirtualNodeType).children;
 	}
 
 	if (isArray(vdom)) {
@@ -320,7 +362,9 @@ function processDOM(id: string, uid: number, mountedVNode: VirtualNodeType = nul
 	const parentId = instance[$$root] ? null : componentTreeNode.parentId;
 	const app = getRegistery().get(uid);
 	const $node = $container || (instance[$$root]
-		? app.nativeElement.children[0] as HTMLElement
+		? app.nativeElement.getAttribute(ATTR_COMPONENT_ID)
+			? app.nativeElement
+			: app.nativeElement.children[0] as HTMLElement
 		: app.nativeElement.querySelector(`[${ATTR_COMPONENT_ID}="${id}"]`) as HTMLElement);
 	const oldVNode = mountedVNode || getComponentVirtualNodeById(id, vdom);
 	const parentVNode = parentId ? getComponentVirtualNodeById(parentId, vdom) : null;
@@ -338,6 +382,11 @@ function processDOM(id: string, uid: number, mountedVNode: VirtualNodeType = nul
 		setAttribute(newVNode, ATTR_COMPONENT_ID, id);
 		instance.displayName && setAttribute(newVNode, ATTR_COMPONENT_NAME, instance.displayName);
 		!isUndefined(instance.props.key) && setAttribute(newVNode, ATTR_KEY, instance.props.key);
+	}
+
+	if (instance[$$root] && getAttribute(newVNode, ATTR_FRAGMENT)) {
+		setAttribute(newVNode, ATTR_ROOT_APP, uid);
+		removeAttribute(newVNode, ATTR_FRAGMENT);
 	}
 
 	const diff = getVirtualDOMDiff(oldVNode, newVNode, includePortals);

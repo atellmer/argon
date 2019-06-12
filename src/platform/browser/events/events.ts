@@ -51,14 +51,16 @@ function makeEvents(vNode: VirtualNodeType, instanceId: string, uid: number) {
 function delegateEvent(rootEl: HTMLElement, uid: number, key: string, nodeId: string, eventName: string, handler: (e: Event) => void) {
 	const app = getRegistery().get(uid);
 	const eventHandler = (e: Event) => {
+		const target = e.target as HTMLElement;
 		let { targetId, handlerIdx } = getCurrentEventData();
 		const resetEventData = () => setCurrentEventData({ targetId: null, handlersCount: 0, handlerIdx: 0 });
 
-		if (!targetId) {
-			const [route] = getDOMElementRoute(rootEl, e.target as HTMLElement);
+		if (!targetId && rootEl.contains(target)) {
+			const [route] = getDOMElementRoute(rootEl, target);
 
 			route.shift();
 			targetId = route.join('.');
+
 			setCurrentEventData({
 				eventName,
 				targetId,
@@ -68,20 +70,20 @@ function delegateEvent(rootEl: HTMLElement, uid: number, key: string, nodeId: st
 					.filter(x => Boolean(x[eventName]))
 					.length
 			});
-		} 
+		}
 
 		const { handlersCount } = getCurrentEventData();
 
 		if (nodeId === targetId) {
-			handler(e);
 			resetEventData();
+			handler(e);
 			return;
 		}
 
 		if (handlerIdx >= handlersCount) { 
 			resetEventData();
 		} else {
-			setCurrentEventData({ handlerIdx: handlerIdx + 1  });
+			setCurrentEventData({ handlerIdx: handlerIdx + 1 });
 		}
 	};
 

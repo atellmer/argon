@@ -3,12 +3,14 @@ import {
 } from './core';
 import {
 	renderComponent,
-	dom
+	dom,
+	fragment
 } from './platform/browser';
 
 
 export {
 	createComponent,
 	renderComponent,
-	dom
+	dom,
+	fragment
 }
