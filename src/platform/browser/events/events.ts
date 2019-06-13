@@ -26,7 +26,8 @@ function makeEvents(vNode: VirtualNodeType, instanceId: string, uid: number) {
 		const chidren = vNode.children.filter(filterNodeFn);
 		const mapAttrsFn = (attrName: string) => {
 			if (vNode.attrs[attrName] === EVENT_HANDLER_REPLACER && /^on:/.test(attrName)) {
-				const nodeId = vNode.route.join('.');
+				const route = vNode.route;
+				const nodeId = route.join('.');
 				const key = `${instanceId}:${nodeId}`;
 				const eventName = attrName.slice(3, attrName.length);
 				const handler = instance[$$eventHandlers][0];

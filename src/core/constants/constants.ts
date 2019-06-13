@@ -42,6 +42,7 @@ export const ATTR_KEY = 'key';
 export const ATTR_REF = 'ref';
 export const ATTR_DONT_UPDATE_NODE = 'data-argondontupdate';
 export const ATTR_FRAGMENT = 'data-argonfragment';
+export const ATTR_FRAGMENT_CHILD = 'data-argonfragmentchild';
 
 export const VDOM_ELEMENT_TYPES = {
 	COMMENT: 'COMMENT',

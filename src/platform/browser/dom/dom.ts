@@ -184,6 +184,25 @@ function transformTemplateStringToVirtualDOM(string: TemplateStringsArray, args:
 	return vNode;
 }
 
+function getVirtualNodeByRoute(sourceVNode: VirtualNodeType, route: Array<number> = []) {
+	let vNode = sourceVNode;
+	const mapRoute = (cIdx: number, idx: number) => {
+		if (idx === 0 && vNode.route.join('.') === route.join('.')) {
+			return vNode;
+		} else {
+			if (vNode.children[cIdx].route.join('.') === route.join('.')) {
+				return vNode[cIdx];
+			}
+	
+			vNode = vNode.children[cIdx];
+		}
+	};
+
+	route.forEach(mapRoute);
+
+	return vNode;
+}
+
 function dom(string: TemplateStringsArray, ...args: Array<any>): VirtualNodeType {
 	const uid = getUIDActive();
 	const app = getRegistery().get(uid);
@@ -223,8 +242,16 @@ function mount(vdom: VirtualNodeType | Array<VirtualNodeType>, parentNode: HTMLE
 			}
 
 			if (isContainerExists) {
-				container.appendChild(DOMElement);
-				!vNode.void && container.appendChild(mount(vNode.children, DOMElement) as HTMLElement);
+				if (DOMElement.getAttribute(ATTR_FRAGMENT)) {
+					const node = mount(vNode.children, DOMElement) as HTMLElement;
+					Array.from(node.childNodes).forEach(node => container.appendChild(node));
+				} else {
+					container.appendChild(DOMElement);
+					if (!vNode.void) {
+						const node = mount(vNode.children, DOMElement) as HTMLElement;
+						container.appendChild(node);
+					}
+				}
 			} else {
 				container = DOMElement;
 				container = mount(vNode.children, container);
@@ -315,7 +342,38 @@ function patchDOM(diff: Array<VirtualDOMDiffType>, $node: HTMLElement, uid: numb
 			const newNode = mount(diffElement.nextValue as VirtualNodeType);
 			const componentId = getComponentId(diffElement.oldValue as VirtualNodeType);
 			componentId && unmountComponent(componentId, uid);
-			node.replaceWith(newNode);
+
+			if (isVirtualNode(diffElement.nextValue) && getAttribute(diffElement.nextValue as VirtualNodeType, ATTR_FRAGMENT)) {
+				const firstEmptyNodeIdx = Array.from($node.childNodes).findIndex(node => node.nodeType === Node.COMMENT_NODE && node.textContent === EMPTY_REPLACER);
+				if (firstEmptyNodeIdx !== -1) {
+					const fragmentRoute = diffElement.route.map((loc, idx, arr) => idx === arr.length - 1 ? firstEmptyNodeIdx : loc);
+					const fragmentNode = getNodeByRoute($node, diffElement.action, fragmentRoute);
+
+					fragmentNode.replaceWith(...Array.from(newNode.childNodes));
+				}
+			} else if (isVirtualNode(diffElement.oldValue) && getAttribute(diffElement.oldValue as VirtualNodeType, ATTR_FRAGMENT)) {
+				const vNode = diffElement.oldValue as VirtualNodeType;
+				const location = vNode.route[vNode.route.length - 1];
+				$node.insertBefore(document.createComment(EMPTY_REPLACER), $node.childNodes[location]);
+				vNode.children.forEach(_ => $node.removeChild($node.childNodes[location + 1]));
+			} else {
+				const vNode = diffElement.oldValue as VirtualNodeType;
+				if (vNode.type === VDOM_ELEMENT_TYPES.COMMENT && vNode.content === EMPTY_REPLACER) {
+					if (node.nodeType === Node.COMMENT_NODE && node.textContent === EMPTY_REPLACER) {
+						node.replaceWith(newNode);
+					} else {
+						const firstEmptyNodeIdx = Array.from($node.childNodes).findIndex(node => node.nodeType === Node.COMMENT_NODE && node.textContent === EMPTY_REPLACER);
+						if (firstEmptyNodeIdx !== -1) {
+							const route = diffElement.route.map((loc, idx, arr) => idx === arr.length - 1 ? firstEmptyNodeIdx : loc);
+							const node = getNodeByRoute($node, diffElement.action, route);
+					
+							node.replaceWith(newNode);
+						}
+					}
+				} else {
+					node.replaceWith(newNode);
+				}
+			}
 		} else if (diffElement.action === VDOM_ACTIONS.ADD_ATTRIBUTE) {
 			const mapAttrs = (attrName: string) => node.setAttribute(attrName, diffElement.nextValue[attrName]);
 			Object.keys(diffElement.nextValue).forEach(mapAttrs);
@@ -383,7 +441,9 @@ function processDOM(id: string, uid: number, mountedVNode: VirtualNodeType = nul
 
 	const diff = getVirtualDOMDiff(oldVNode, newVNode, includePortals);
 
-	//console.log('[diff]', diff)
+	console.log('$node', $node.childNodes)
+	console.log('oldVNode', deepClone(oldVNode))
+	console.log('[diff]', diff)
 
 	patchDOM(diff, $node, uid, includePortals);
 

@@ -20,7 +20,7 @@ import {
 	STATEFULL_COMPONENT_REPLACER,
 	VDOM_ELEMENT_TYPES
 } from '../constants';
-import { isFunction, sanitize, error, isUndefined, isNull } from '../../helpers';
+import { isFunction, sanitize, error, isUndefined, isNull, deepClone } from '../../helpers';
 import {
 	getRegistery,
 	getCurrentMountedComponentId,

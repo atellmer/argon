@@ -2,12 +2,10 @@ import * as Argon from '../src';
 
 
 const Content = Argon.createComponent(() => {
-	return Argon.dom`
-		<div>
-			<div>Content 1</div>
-			<div>Content 2</div>
-		</div>
-	`
+	return Argon.fragment(Argon.dom`
+		<button on:click="${() => console.log('click')}">button</button>
+		<div>Content 2</div>
+	`)
 })
 
 
@@ -43,7 +41,6 @@ const App = Argon.createComponent({
 			<div>
 				${Content()}
 				<div>item 1</div>
-				<div>item 2</div>
 			</<div>
 		`;
 	}
@@ -51,23 +48,17 @@ const App = Argon.createComponent({
 
 Argon.renderComponent(App({ isOpen: false }), document.getElementById('app'));
 
+/*
 setTimeout(() => {
 	Argon.renderComponent(App({ isOpen: true }), document.getElementById('app'));
-}, 1000)
+}, 1000)*/
 
 /*
 setTimeout(() => {
 	Argon.renderComponent(App({ isOpen: false }), document.getElementById('app'));
 }, 2000)
 
-
 setTimeout(() => {
 	Argon.renderComponent(App({ isOpen: true }), document.getElementById('app'));
 }, 3000)*/
-
-
-
-
-
-
 

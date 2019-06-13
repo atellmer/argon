@@ -184,7 +184,7 @@ function createElement(tag: string): VirtualNodeType {
   return element;
 }
 
-function isVirtualNode(node: VirtualNodeType) {
+function isVirtualNode(node: any) {
 	return typeof node === 'object' &&  node.isVirtualNode === true; 
 }
 
