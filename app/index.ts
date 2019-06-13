@@ -3,7 +3,7 @@ import * as Argon from '../src';
 
 const Content = Argon.createComponent(() => {
 	return Argon.dom`
-		<div fragment="true">
+		<div>
 			<div>Content 1</div>
 			<div>Content 2</div>
 		</div>
@@ -41,10 +41,9 @@ const App = Argon.createComponent({
 
 		return Argon.dom`
 			<div>
-				${isOpen && Content()}
+				${Content()}
 				<div>item 1</div>
 				<div>item 2</div>
-				${isOpen && Content()}
 			</<div>
 		`;
 	}
@@ -56,6 +55,7 @@ setTimeout(() => {
 	Argon.renderComponent(App({ isOpen: true }), document.getElementById('app'));
 }, 1000)
 
+/*
 setTimeout(() => {
 	Argon.renderComponent(App({ isOpen: false }), document.getElementById('app'));
 }, 2000)
@@ -63,7 +63,7 @@ setTimeout(() => {
 
 setTimeout(() => {
 	Argon.renderComponent(App({ isOpen: true }), document.getElementById('app'));
-}, 3000)
+}, 3000)*/
 
 
 

@@ -163,7 +163,7 @@ function transformTemplateStringToVirtualDOM(string: TemplateStringsArray, args:
 				const mountedVNode = mountVirtualDOM(vNode, elements, null);
 
 				if (isArray(mountedVNode)) {
-					transitVNode.splice(idx, 1, ...mountedVNode);
+					transitVNode.splice(idx, 1, ...(mountedVNode as any));
 				} else {
 					transitVNode[idx] = mountedVNode;
 				}
@@ -180,9 +180,6 @@ function transformTemplateStringToVirtualDOM(string: TemplateStringsArray, args:
 		const flattenChildren = flatten((vNode as VirtualNodeType).children);
 		(vNode as VirtualNodeType).children = flattenChildren;
 	}
-
-	//console.log('elements', [...elements])
-	//console.log('vNode', deepClone(vNode))
 
 	return vNode;
 }
@@ -226,16 +223,8 @@ function mount(vdom: VirtualNodeType | Array<VirtualNodeType>, parentNode: HTMLE
 			}
 
 			if (isContainerExists) {
-				if (DOMElement.getAttribute('fragment')) {
-					const node = mount(vNode.children, DOMElement) as HTMLElement;
-					Array.from(node.childNodes).forEach(node => container.appendChild(node));
-				} else {
-					container.appendChild(DOMElement);
-					if (!vNode.void) {
-						const node = mount(vNode.children, DOMElement) as HTMLElement;
-						!vNode.void && container.appendChild(node);
-					}
-				}
+				container.appendChild(DOMElement);
+				!vNode.void && container.appendChild(mount(vNode.children, DOMElement) as HTMLElement);
 			} else {
 				container = DOMElement;
 				container = mount(vNode.children, container);
@@ -253,10 +242,6 @@ function mount(vdom: VirtualNodeType | Array<VirtualNodeType>, parentNode: HTMLE
 				container = document.createComment(vNode.content);
 			}
 		}
-	}
-
-	if (!isArray(vdom) && getAttribute(vdom as VirtualNodeType, ATTR_FRAGMENT)) {
-		vdom = (vdom as VirtualNodeType).children;
 	}
 
 	if (isArray(vdom)) {
@@ -330,28 +315,7 @@ function patchDOM(diff: Array<VirtualDOMDiffType>, $node: HTMLElement, uid: numb
 			const newNode = mount(diffElement.nextValue as VirtualNodeType);
 			const componentId = getComponentId(diffElement.oldValue as VirtualNodeType);
 			componentId && unmountComponent(componentId, uid);
-			
-			//console.log('node', newNode.cloneNode(true))
-			if (newNode.nodeType === Node.ELEMENT_NODE && (newNode as HTMLElement).getAttribute('fragment')) {
-
-				console.log('node', node.cloneNode(true))
-				if (node.nodeType === Node.COMMENT_NODE && node.textContent === EMPTY_REPLACER) {
-					node.replaceWith(...Array.from(newNode.childNodes));
-
-				}
-			} else {
-				if (getAttribute(diffElement.oldValue as VirtualNodeType, 'fragment')) {
-					const value = diffElement.oldValue as VirtualNodeType;
-					const location = value.route[value.route.length - 1];
-					$node.insertBefore(document.createComment(EMPTY_REPLACER), $node.childNodes[location]);
-					value.children.forEach(_ => {
-						const replaced = $node.childNodes[location + 1];
-						$node.removeChild(replaced);
-					});
-				} else {
-					node.replaceWith(newNode);
-				}
-			}
+			node.replaceWith(newNode);
 		} else if (diffElement.action === VDOM_ACTIONS.ADD_ATTRIBUTE) {
 			const mapAttrs = (attrName: string) => node.setAttribute(attrName, diffElement.nextValue[attrName]);
 			Object.keys(diffElement.nextValue).forEach(mapAttrs);
@@ -419,7 +383,7 @@ function processDOM(id: string, uid: number, mountedVNode: VirtualNodeType = nul
 
 	const diff = getVirtualDOMDiff(oldVNode, newVNode, includePortals);
 
-	console.log('[diff]', diff)
+	//console.log('[diff]', diff)
 
 	patchDOM(diff, $node, uid, includePortals);
 
