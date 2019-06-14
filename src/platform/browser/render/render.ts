@@ -1,5 +1,6 @@
 import {
-	ATTR_ROOT_APP
+	ATTR_ROOT_APP,
+	ATTR_FRAGMENT
 } from '../../../core/constants/constants';
 import {
 	createApp,
@@ -18,7 +19,7 @@ import {
 	processDOM,
 	mount
 } from '../dom/dom';
-import { getVirtualDOM, buildVirtualNodeWithRoutes } from '../../../core/vdom/vdom';
+import { getVirtualDOM, buildVirtualNodeWithRoutes, getAttribute } from '../../../core/vdom/vdom';
 import { makeEvents } from '../events/events';
 
 
@@ -50,9 +51,20 @@ function renderComponent(componentFactory: StatefullComponentFactoryType | State
 			vNode = wire(statefullComponentFactory);
 		}
 
-		app.vdom = vNode;
+		const transitChildren = [];
+		vNode.children.forEach((vNode) => {
+			if (getAttribute(vNode, ATTR_FRAGMENT)) {
+				transitChildren.push(...vNode.children);
+			} else {
+				transitChildren.push(vNode);
+			}
+		});
+
+		vNode.children = transitChildren;
+
 		app.queue.push(() => makeEvents(vNode, uidMounted));
 		vNode = buildVirtualNodeWithRoutes(vNode);
+		app.vdom = vNode;
 		container.appendChild(mount(vNode));
 		app.queue.forEach(fn => fn());
 		app.queue = [];

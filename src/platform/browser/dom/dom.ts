@@ -195,28 +195,11 @@ function mount(vdom: VirtualNodeType | Array<VirtualNodeType>, parentNode: HTMLE
 
 			Object.keys(vNode.attrs).forEach(mapAttrs);
 
-			const refId = DOMElement.getAttribute(ATTR_REF);
-
-			if (parseInt(refId) >= 0) {
-				const refs = getRegistery().get(uid).refs;
-
-				if (refs[refId]) {
-					refs[refId](DOMElement);
-				};
-
-				DOMElement.removeAttribute(ATTR_REF);
-			}
-
 			if (isContainerExists) {
-				if (DOMElement.getAttribute(ATTR_FRAGMENT)) {
+				container.appendChild(DOMElement);
+				if (!vNode.void) {
 					const node = mount(vNode.children, DOMElement) as HTMLElement;
-					Array.from(node.childNodes).forEach(node => container.appendChild(node));
-				} else {
-					container.appendChild(DOMElement);
-					if (!vNode.void) {
-						const node = mount(vNode.children, DOMElement) as HTMLElement;
-						container.appendChild(node);
-					}
+					container.appendChild(node);
 				}
 			} else {
 				container = DOMElement;
@@ -320,38 +303,7 @@ function patchDOM(diff: Array<VirtualDOMDiffType>, $node: HTMLElement, uid: numb
 			const newNode = mount(diffElement.nextValue as VirtualNodeType);
 			const componentId = getComponentId(diffElement.oldValue as VirtualNodeType);
 			componentId && unmountComponent(componentId, uid);
-
-			if (isVirtualNode(diffElement.nextValue) && getAttribute(diffElement.nextValue as VirtualNodeType, ATTR_FRAGMENT)) {
-				const firstEmptyNodeIdx = Array.from($node.childNodes).findIndex(node => node.nodeType === Node.COMMENT_NODE && node.textContent === EMPTY_REPLACER);
-				if (firstEmptyNodeIdx !== -1) {
-					const fragmentRoute = diffElement.route.map((loc, idx, arr) => idx === arr.length - 1 ? firstEmptyNodeIdx : loc);
-					const fragmentNode = getNodeByRoute($node, diffElement.action, fragmentRoute);
-
-					fragmentNode.replaceWith(...Array.from(newNode.childNodes));
-				}
-			} else if (isVirtualNode(diffElement.oldValue) && getAttribute(diffElement.oldValue as VirtualNodeType, ATTR_FRAGMENT)) {
-				const vNode = diffElement.oldValue as VirtualNodeType;
-				const location = vNode.route[vNode.route.length - 1];
-				$node.insertBefore(document.createComment(EMPTY_REPLACER), $node.childNodes[location]);
-				vNode.children.forEach(_ => $node.removeChild($node.childNodes[location + 1]));
-			} else {
-				const vNode = diffElement.oldValue as VirtualNodeType;
-				if (vNode.type === VDOM_ELEMENT_TYPES.COMMENT && vNode.content === EMPTY_REPLACER) {
-					if (node.nodeType === Node.COMMENT_NODE && node.textContent === EMPTY_REPLACER) {
-						node.replaceWith(newNode);
-					} else {
-						const firstEmptyNodeIdx = Array.from($node.childNodes).findIndex(node => node.nodeType === Node.COMMENT_NODE && node.textContent === EMPTY_REPLACER);
-						if (firstEmptyNodeIdx !== -1) {
-							const route = diffElement.route.map((loc, idx, arr) => idx === arr.length - 1 ? firstEmptyNodeIdx : loc);
-							const node = getNodeByRoute($node, diffElement.action, route);
-					
-							node.replaceWith(newNode);
-						}
-					}
-				} else {
-					node.replaceWith(newNode);
-				}
-			}
+			node.replaceWith(newNode);
 		} else if (diffElement.action === VDOM_ACTIONS.ADD_ATTRIBUTE) {
 			const attrValueBlackList = [EVENT_HANDLER_REPLACER];
 			const mapAttrs = (attrName: string) => !attrValueBlackList.includes(diffElement.nextValue[attrName]) && node.setAttribute(attrName, diffElement.nextValue[attrName]);
@@ -390,11 +342,24 @@ function processDOM(vNode: VirtualNodeType = null, nextVNode: VirtualNodeType = 
 	const prevRoute = [...vNode.route];
 
 	app.queue.push(() => makeEvents(nextVNode, uid));
+	
+	const transitChildren = [];
+	nextVNode.children.forEach((vNode) => {
+		if (getAttribute(vNode, ATTR_FRAGMENT)) {
+			transitChildren.push(...vNode.children);
+		} else {
+			transitChildren.push(vNode);
+		}
+	});
+	
+	nextVNode.children = transitChildren;
 	nextVNode = buildVirtualNodeWithRoutes(nextVNode, prevRoute, prevRoute.length, 0, true);
+	console.log('vNode', deepClone(vNode))
+	console.log('nextVNode', deepClone(nextVNode))
 
 	const diff = getVirtualDOMDiff(vNode, nextVNode);
-
-	console.log('diff', diff)
+	
+	console.log('[diff]', diff)
 
 	patchDOM(diff, $node, uid);
 	app.queue.forEach(fn => fn());

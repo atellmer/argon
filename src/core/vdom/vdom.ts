@@ -19,7 +19,9 @@ import {
 	ATTR_PORTAL_ID,
   VDOM_ELEMENT_TYPES,
   VDOM_ACTIONS,
-  QUEUE_EVENTS
+  QUEUE_EVENTS,
+  ATTR_FRAGMENT,
+  ATTR_FRAGMENT_CHILD
 } from '../constants';
 import { isEmpty, isFunction, deepClone } from '../../helpers';
 import {
@@ -293,6 +295,7 @@ function getVirtualDOMDiff(
   VDOM: VirtualNodeType,
   nextVDOM: VirtualNodeType,
   includePortals: boolean = false,
+  onFragment: (diff: Array<VirtualDOMDiffType>, route: Array<number>, vNodeList: Array<VirtualNodeType>) => void = () => {},
   targetNextVDOM: VirtualNodeType = null,
   prevDiff: Array<VirtualDOMDiffType> = [],
   prevRoute: Array<number> = [],
@@ -323,7 +326,12 @@ function getVirtualDOMDiff(
   }
 
   if (!VDOM) {
-    diff.push(createDiffAction(VDOM_ACTIONS.ADD_NODE, route, null, nextVDOM));
+    if (/*getAttribute(nextVDOM, ATTR_FRAGMENT)*/false) {
+      onFragment(diff, route, nextVDOM.children);
+      diff = [];
+    } else {
+      diff.push(createDiffAction(VDOM_ACTIONS.ADD_NODE, route, null, nextVDOM));
+    }
     return diff;
   } else if (!nextVDOM || (key !== nextKey)) {
     diff.push(createDiffAction(VDOM_ACTIONS.REMOVE_NODE, route, VDOM, null));
@@ -333,7 +341,12 @@ function getVirtualDOMDiff(
     VDOM.name !== nextVDOM.name ||
     VDOM.content !== nextVDOM.content
   ) {
-    diff.push(createDiffAction(VDOM_ACTIONS.REPLACE_NODE, route, VDOM, nextVDOM));
+    if (/*getAttribute(nextVDOM, ATTR_FRAGMENT)*/false) {
+      onFragment(diff, route, nextVDOM.children);
+      diff = [];
+    } else {
+      diff.push(createDiffAction(VDOM_ACTIONS.REPLACE_NODE, route, VDOM, nextVDOM));
+    }
     return diff;
   } else {
     if (VDOM.attrs && nextVDOM.attrs) {
@@ -400,6 +413,7 @@ function getVirtualDOMDiff(
             childVNode,
             childNextVNode,
             includePortals,
+            onFragment,
             targetNextVDOM,
             diff,
             route,
