@@ -1,6 +1,5 @@
 import {
-	ATTR_ROOT_APP,
-	$$id
+	ATTR_ROOT_APP
 } from '../../../core/constants/constants';
 import {
 	createApp,
@@ -12,23 +11,26 @@ import {
 } from '../../../core/scope/scope';
 import {
 	StatefullComponentFactoryType,
-	wire,
-	getComponentTree
+	StatelessComponentFactoryType,
+	wire
 } from '../../../core/component/component';
 import {
 	processDOM,
 	mount
 } from '../dom/dom';
+import { getVirtualDOM, buildVirtualNodeWithRoutes } from '../../../core/vdom/vdom';
+import { makeEvents } from '../events/events';
 
 
-function renderComponent(componentFactory: StatefullComponentFactoryType, container: HTMLElement) {
+function renderComponent(componentFactory: StatefullComponentFactoryType | StatelessComponentFactoryType, container: HTMLElement) {
 	const isMounted = Boolean(container.getAttribute(ATTR_ROOT_APP));
 	const uidMounted = getUIDMounted();
-
-	componentFactory.uid = uidMounted;
+	const statelessComponentFactory = componentFactory as StatelessComponentFactoryType;
+	const statefullComponentFactory = componentFactory as StatefullComponentFactoryType;
 
 	if (!getRegistery().get(uidMounted)) {
 		container.innerHTML = '';
+		let vNode = null;
 
 		if (!container.getAttribute(ATTR_ROOT_APP)) {
 			container.setAttribute(ATTR_ROOT_APP, uidMounted.toString());
@@ -40,18 +42,38 @@ function renderComponent(componentFactory: StatefullComponentFactoryType, contai
 		registry.set(uidMounted, app);
 		setUIDActive(uidMounted);
 
-		const vdom = wire(componentFactory);
-		const node = mount(vdom);
+		if (statelessComponentFactory.isStatelessComponent) {
+			vNode = statelessComponentFactory.createElement();
+		}
 
-		app.vdom = vdom;
-		container.appendChild(node);
+		if (statefullComponentFactory.isStatefullComponent) {
+			vNode = wire(statefullComponentFactory);
+		}
+
+		app.vdom = vNode;
+		app.queue.push(() => makeEvents(vNode, uidMounted));
+		vNode = buildVirtualNodeWithRoutes(vNode);
+		app.queue.forEach(fn => fn());
+		app.queue = [];
+		container.appendChild(mount(vNode));
 	} else if (isMounted) {
 		const uid = Number(container.getAttribute(ATTR_ROOT_APP));
-		const componentTree = getComponentTree(uid);
-		const instance = componentTree['0'].instance;
+		const vNode = getVirtualDOM(uid);
+		let nextVNode = null;
 
+		setUIDActive(uid);
 		setCurrentMountedComponentId(null);
-		processDOM(instance[$$id], uid, null, wire(componentFactory));
+
+		if (statelessComponentFactory.isStatelessComponent) {
+			nextVNode = statelessComponentFactory.createElement();
+		}
+
+		if (statefullComponentFactory.isStatefullComponent) {
+			nextVNode = wire(statefullComponentFactory);
+		}
+
+		vNode.route = [0];
+		processDOM(vNode, nextVNode);
 	} else {
 		setUIDMounted(uidMounted + 1);
 		setCurrentMountedComponentId(null);

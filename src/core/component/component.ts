@@ -80,7 +80,6 @@ type StatefullComponentFactoryType = {
 		pure: boolean;
 	},
 	mountPortal: (id: string, nextVNode: VirtualNodeType) => void | null;
-	uid: number;
 	props: {
 		ref?: any;
 		key?: any;
@@ -90,8 +89,7 @@ type StatefullComponentFactoryType = {
 type StatelessComponentFactoryType = {
 	isStatelessComponent: boolean;
 	displayName: string;
-	createElement: () => VirtualNodeType,
-	uid: number,
+	createElement: () => VirtualNodeType;
 	props: {
 		key?: any;
 	};

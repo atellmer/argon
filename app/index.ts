@@ -1,64 +1,54 @@
 import * as Argon from '../src';
 
 
-const Content = Argon.createComponent(() => {
-	return Argon.fragment(Argon.dom`
-		<button on:click="${() => console.log('click')}">button</button>
-		<div>Content 2</div>
-	`)
-})
-
+let state = {
+	items: Array(1000).fill(null).map((_, idx) => idx)
+};
 
 const Item = Argon.createComponent(({ id, onRemove }) => {
+	const handleClick = () => {
+		onRemove(id);
+	};
+
 	return Argon.dom`
 		<div>
 			Item: ${id}
-			<button on:click="${onRemove(id)}">remove</button>
+			<button on:click="${handleClick}">remove</button>
 		</div>
 	`
-}, { displayName: 'Item', defaultProps: { id: -1 } });
+}, { displayName: 'Item' });
 
 
-const App = Argon.createComponent({
-	displayName: 'App',
-	getInitialState: () => ({
-		isOpen: false,
-		items: Array(10).fill(null).map((v, idx) => idx)
-	}),
-	handleRemove(x) {
-		return () => {
-			this.setState({ items: this.state.items.filter(v => v !== x)});
-		}
-	},
-	handleOpen() {
-		this.setState({ isOpen: !this.state.isOpen });
-	},
-	render() {
-		const { items } = this.state;
-		const { isOpen } = this.props;
+const App = Argon.createComponent(({ items, setItems }) => {
 
-		return Argon.dom`
-			<div>
-				${Content()}
-				<div>item 1</div>
-			</<div>
-		`;
+	const handleRemove = (id) => {
+
+		console.log('remove', id)
+		setItems(items.filter(x => x !== id));
 	}
-});
 
-Argon.renderComponent(App({ isOpen: false }), document.getElementById('app'));
+	return Argon.dom`
+		<div class="app">
+			<div>App</div>
+			${items.map(x => Item({ key: x, id: x, onRemove: handleRemove }))}
+			<div>-----</div>
+		</div>
+	`
+}, { displayName: 'App' });
+
+
+const setItems = (items) => {
+	state = {
+		...state,
+		items: [...items]
+	};
+	Argon.renderComponent(App({ items: state.items, setItems }), document.getElementById('app'));
+};
+
+Argon.renderComponent(App({ items: state.items, setItems }), document.getElementById('app'));
 
 /*
 setTimeout(() => {
-	Argon.renderComponent(App({ isOpen: true }), document.getElementById('app'));
+	Argon.renderComponent(App({ text: 'zzz' }), document.getElementById('app'));
 }, 1000)*/
-
-/*
-setTimeout(() => {
-	Argon.renderComponent(App({ isOpen: false }), document.getElementById('app'));
-}, 2000)
-
-setTimeout(() => {
-	Argon.renderComponent(App({ isOpen: true }), document.getElementById('app'));
-}, 3000)*/
 

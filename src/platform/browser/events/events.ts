@@ -7,16 +7,13 @@ import {
 import {
 	EVENT_HANDLER_REPLACER,
 	ATTR_COMPONENT_ID,
-	VDOM_ELEMENT_TYPES,
-	$$eventHandlers
+	VDOM_ELEMENT_TYPES
 } from '../../../core/constants/constants';
-import { getComponentTree } from '../../../core/component/component';
 import { getDOMElementRoute } from '../dom/dom';
 
 
-function makeEvents(vNode: VirtualNodeType, instanceId: string, uid: number) {
+function makeEvents(vNode: VirtualNodeType, uid: number) {
 	const app = getRegistery().get(uid);
-	const { instance } = getComponentTree(uid)[instanceId];
 	const rootEl = app.nativeElement;
 
 	if (vNode.type === VDOM_ELEMENT_TYPES.TAG) {
@@ -28,12 +25,12 @@ function makeEvents(vNode: VirtualNodeType, instanceId: string, uid: number) {
 			if (vNode.attrs[attrName] === EVENT_HANDLER_REPLACER && /^on:/.test(attrName)) {
 				const route = vNode.route;
 				const nodeId = route.join('.');
-				const key = `${instanceId}:${nodeId}`;
+				const key = `${nodeId}`;
 				const eventName = attrName.slice(3, attrName.length);
-				const handler = instance[$$eventHandlers][0];
+				const handler = app.eventHandlersCache[0];
 
 				delegateEvent(rootEl, uid, key, nodeId, eventName, handler);
-				instance[$$eventHandlers].splice(0, 1);
+				app.eventHandlersCache.splice(0, 1);
 				delete vNode.attrs[attrName];
 			}
 		};
@@ -41,7 +38,7 @@ function makeEvents(vNode: VirtualNodeType, instanceId: string, uid: number) {
 			const componentId = vNode.attrs[ATTR_COMPONENT_ID];
 			const isComponentNode = Boolean(componentId);
 
-			!isComponentNode && makeEvents(vNode, instanceId, uid);
+			!isComponentNode && makeEvents(vNode, uid);
 		};
 
 		attrNames.forEach(mapAttrsFn);
@@ -54,7 +51,9 @@ function delegateEvent(rootEl: HTMLElement, uid: number, key: string, nodeId: st
 	const eventHandler = (e: Event) => {
 		const target = e.target as HTMLElement;
 		let { targetId, handlerIdx } = getCurrentEventData();
-		const resetEventData = () => setCurrentEventData({ targetId: null, handlersCount: 0, handlerIdx: 0 });
+		const resetEventData = () => {
+			setCurrentEventData({ targetId: null, handlersCount: 0, handlerIdx: 1 });
+		}
 
 		if (!targetId && rootEl.contains(target)) {
 			const [route] = getDOMElementRoute(rootEl, target);
@@ -76,9 +75,8 @@ function delegateEvent(rootEl: HTMLElement, uid: number, key: string, nodeId: st
 		const { handlersCount } = getCurrentEventData();
 
 		if (nodeId === targetId) {
-			resetEventData();
 			handler(e);
-			return;
+			resetEventData();
 		}
 
 		if (handlerIdx >= handlersCount) { 

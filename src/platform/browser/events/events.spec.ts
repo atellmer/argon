@@ -12,7 +12,7 @@ import { renderComponent } from '../render';
 
 
 jsdom();
-
+/*
 test(`[Events]: remove nodes by click`, (t) => {
 	const $container = document.createElement('div');
 	const Item = createComponent(({ id, onRemove }) => {
@@ -69,4 +69,4 @@ test(`[Events]: remove nodes by click`, (t) => {
 		t.equal(expected, result);
 		t.end();
 	});
-});
+});*/

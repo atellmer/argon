@@ -21,7 +21,8 @@ type ScopeType = {
 type AppType = {
 	nativeElement: HTMLElement;
 	componentTree: ComponentTreeType;
-	vdom: VirtualNodeType,
+	vdom: VirtualNodeType;
+	eventHandlersCache: Array<(e) => void>;
 	eventHandlers: HashMap<{
 		addEvent?: Function;
 		removeEvent?: Function;
@@ -53,7 +54,7 @@ function createScope(): ScopeType {
 		currentEventData: {
 			eventName: null,
 			targetId: null,
-			handlerIdx: 0,
+			handlerIdx: 1,
 			handlersCount: 0
 		}
 	};
@@ -64,6 +65,7 @@ function createApp(nativeElement: HTMLElement): AppType {
 		nativeElement,
 		componentTree: {},
 		vdom: null,
+		eventHandlersCache: [],
 		eventHandlers: {},
 		refs: [],
 		queue: []
