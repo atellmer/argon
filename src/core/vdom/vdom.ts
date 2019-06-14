@@ -317,11 +317,8 @@ function getVirtualDOMDiff(
 
   if (!VDOM && !nextVDOM) return diff;
 
-  if (
-    !includePortals &&
-    (Boolean(getAttribute(VDOM, ATTR_PORTAL_ID)) ||
-      Boolean(getAttribute(nextVDOM, ATTR_PORTAL_ID)))
-  ) {
+  if (!includePortals &&
+    (Boolean(getAttribute(VDOM, ATTR_PORTAL_ID)) || Boolean(getAttribute(nextVDOM, ATTR_PORTAL_ID)))) {
     return diff;
   }
 

@@ -1,4 +1,3 @@
-import { HashMap } from '../shared';
 import { ComponentTreeType } from '../component';
 import { VirtualNodeType } from '../vdom';
 
@@ -10,12 +9,6 @@ type ScopeType = {
 		active: number;
 	},
 	currentMountedComponentId: string | null;
-	currentEventData: {
-		eventName?: string | null;
-		targetId?: string | null;
-		handlerIdx?: number;
-		handlersCount?: number;
-	}
 }
 
 type AppType = {
@@ -23,7 +16,7 @@ type AppType = {
 	componentTree: ComponentTreeType;
 	vdom: VirtualNodeType;
 	eventHandlersCache: Array<(e) => void>;
-	eventHandlers: HashMap<{
+	eventHandlers: WeakMap<any, {
 		addEvent?: Function;
 		removeEvent?: Function;
 	}>;
@@ -40,8 +33,6 @@ const getUIDActive = (): number => scope.uid.active;
 const setUIDActive = (uid: number) => scope.uid.active = uid;
 const getCurrentMountedComponentId = (): string | null => scope.currentMountedComponentId;
 const setCurrentMountedComponentId = (id: string | null) => scope.currentMountedComponentId = id;
-const getCurrentEventData = () => scope.currentEventData;
-const setCurrentEventData = (data: ScopeType['currentEventData']) => scope.currentEventData = { ...scope.currentEventData, ...data };
 
 function createScope(): ScopeType {
 	return {
@@ -51,12 +42,6 @@ function createScope(): ScopeType {
 			active: 0
 		},
 		currentMountedComponentId: null,
-		currentEventData: {
-			eventName: null,
-			targetId: null,
-			handlerIdx: 1,
-			handlersCount: 0
-		}
 	};
 }
 
@@ -66,7 +51,7 @@ function createApp(nativeElement: HTMLElement): AppType {
 		componentTree: {},
 		vdom: null,
 		eventHandlersCache: [],
-		eventHandlers: {},
+		eventHandlers: new WeakMap(),
 		refs: [],
 		queue: []
 	}
@@ -83,8 +68,6 @@ export {
 	setUIDActive,
 	getCurrentMountedComponentId,
 	setCurrentMountedComponentId,
-	getCurrentEventData,
-	setCurrentEventData,
 	createScope,
 	createApp
 }

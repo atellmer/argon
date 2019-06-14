@@ -53,9 +53,9 @@ function renderComponent(componentFactory: StatefullComponentFactoryType | State
 		app.vdom = vNode;
 		app.queue.push(() => makeEvents(vNode, uidMounted));
 		vNode = buildVirtualNodeWithRoutes(vNode);
+		container.appendChild(mount(vNode));
 		app.queue.forEach(fn => fn());
 		app.queue = [];
-		container.appendChild(mount(vNode));
 	} else if (isMounted) {
 		const uid = Number(container.getAttribute(ATTR_ROOT_APP));
 		const vNode = getVirtualDOM(uid);

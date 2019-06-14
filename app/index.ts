@@ -1,31 +1,23 @@
 import * as Argon from '../src';
 
 
-let state = {
-	items: Array(1000).fill(null).map((_, idx) => idx)
-};
-
 const Item = Argon.createComponent(({ id, onRemove }) => {
 	const handleClick = () => {
+		console.log('remove', id)
 		onRemove(id);
 	};
 
 	return Argon.dom`
 		<div>
 			Item: ${id}
-			<button on:click="${handleClick}">remove</button>
+			<button on:click="${handleClick}">remove: ${id}</button>
 		</div>
 	`
 }, { displayName: 'Item' });
 
 
 const App = Argon.createComponent(({ items, setItems }) => {
-
-	const handleRemove = (id) => {
-
-		console.log('remove', id)
-		setItems(items.filter(x => x !== id));
-	}
+	const handleRemove = (id) => setItems(items.filter(x => x !== id));
 
 	return Argon.dom`
 		<div class="app">
@@ -37,18 +29,16 @@ const App = Argon.createComponent(({ items, setItems }) => {
 }, { displayName: 'App' });
 
 
+let state = {
+	items: Array(10).fill(null).map((_, idx) => idx)
+};
+const render = (...args) => Argon.renderComponent(App(...args), document.getElementById('app'))
 const setItems = (items) => {
 	state = {
 		...state,
 		items: [...items]
 	};
-	Argon.renderComponent(App({ items: state.items, setItems }), document.getElementById('app'));
+	render({ items: state.items, setItems: setItems });
 };
 
-Argon.renderComponent(App({ items: state.items, setItems }), document.getElementById('app'));
-
-/*
-setTimeout(() => {
-	Argon.renderComponent(App({ text: 'zzz' }), document.getElementById('app'));
-}, 1000)*/
-
+render({ items: state.items, setItems: setItems });

@@ -11,7 +11,9 @@ import {
 	getComponentId,
 	wire,
 	getPublicInstance,
-	unmountComponent
+	unmountComponent,
+	isStatefullComponent,
+	isStatelessComponent
 } from './component';
 
 export {
@@ -26,5 +28,7 @@ export {
 	getComponentId,
 	wire,
 	getPublicInstance,
-	unmountComponent
+	unmountComponent,
+	isStatefullComponent,
+	isStatelessComponent
 }

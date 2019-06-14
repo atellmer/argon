@@ -8,7 +8,6 @@ import {
 	$$prevProps,
 	$$isMounted,
 	$$portal,
-	$$eventHandlers,
 	$$root,
 	$$markedIDMap,
 	$$getComponentSymbol,
@@ -20,8 +19,18 @@ import {
 	STATEFULL_COMPONENT_REPLACER,
 	VDOM_ELEMENT_TYPES
 } from '../constants';
-import { isFunction, sanitize, error, isUndefined, isNull, deepClone } from '../../helpers';
 import {
+	isFunction,
+	sanitize,
+	error,
+	isUndefined,
+	isNull,
+	isObject,
+	isEmpty,
+	deepClone
+} from '../../helpers';
+import {
+	getUIDActive,
 	getRegistery,
 	getCurrentMountedComponentId,
 	setCurrentMountedComponentId
@@ -172,7 +181,6 @@ function createComponent(defObj: ComponentDefType | Function, options: Component
 			this[$$orderedIDList] = [];
 			this[$$prevState] = { ...this.state };
 			this[$$prevProps] = { ...this.props };
-			this[$$eventHandlers] = [];
 			this[$$portal] = false;
 		}
 
@@ -326,7 +334,7 @@ function getPublicInstance(uid: number, key: any, componentFactory: StatefullCom
 }
 
 function wire(componentFactory: StatefullComponentFactoryType): VirtualNodeType {
-	const uid = componentFactory.uid;
+	const uid = getUIDActive();
 	const app = getRegistery().get(uid);
 	const sanitizedProps = sanitize(componentFactory.props);
 	const { key, ref } = sanitizedProps;
@@ -337,7 +345,6 @@ function wire(componentFactory: StatefullComponentFactoryType): VirtualNodeType 
 
 	instance[$$uid] = uid;
 	instance[$$prevProps] = { ...instance.props };
-	instance[$$eventHandlers] = [];
 
 	if (!instance[$$isMounted]) {
 		componentTree = makeComponentTree(instance, getCurrentMountedComponentId());
@@ -384,7 +391,7 @@ function wire(componentFactory: StatefullComponentFactoryType): VirtualNodeType 
 		vNode = createCommentNode(`${STATEFULL_COMPONENT_REPLACER}:${id}${Boolean(instance.displayName) ? `:${instance.displayName}` : ''}`);
 	}
 
-	app.queue.push(() => makeEvents(vNode, id, uid));
+	app.queue.push(() => makeEvents(vNode, uid));
 
 	if (instance[$$root]) {
 		vNode = buildVirtualNodeWithRoutes(vNode);
@@ -487,6 +494,13 @@ function unmountComponent(id: string, uid: number, parentInstance = null) {
 	getRegistery().set(uid, app);
 }
 
+function isStatefullComponent(o: StatefullComponentFactoryType) {
+	return isObject(o) && !isEmpty(o) && (o as StatefullComponentFactoryType).isStatefullComponent === true;
+}
+function isStatelessComponent(o: StatelessComponentFactoryType) {
+	return isObject(o) && !isEmpty(o) && (o as StatelessComponentFactoryType).isStatelessComponent === true;
+}
+
 
 export {
 	ComponentDefType,
@@ -500,5 +514,7 @@ export {
 	getComponentId,
 	wire,
 	getPublicInstance,
-	unmountComponent
+	unmountComponent,
+	isStatefullComponent,
+	isStatelessComponent
 }
