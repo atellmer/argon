@@ -1,10 +1,6 @@
 import { VirtualNodeType } from '../../../core/vdom';
 import { getRegistery } from '../../../core/scope/scope';
-import {
-	EVENT_HANDLER_REPLACER,
-	ATTR_COMPONENT_ID,
-	VDOM_ELEMENT_TYPES
-} from '../../../core/constants/constants';
+import { EVENT_HANDLER_REPLACER, VDOM_ELEMENT_TYPES } from '../../../core/constants/constants';
 import { getDOMElementByRoute } from '../dom/dom';
 import { isFunction } from '../../../helpers';
 

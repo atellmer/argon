@@ -27,13 +27,8 @@ const App = Argon.createComponent(({ isOpen }) => {
 
 const render = (...args) => Argon.renderComponent(App(...args), document.getElementById('app'))
 
-render({ isOpen: false });
+render({ isOpen: true });
 
-setTimeout(() => render({ isOpen: true }), 1000)
-setTimeout(() => render({ isOpen: false }), 2000)
-setTimeout(() => render({ isOpen: true }), 3000)
-
-
-
-
-
+//setTimeout(() => render({ isOpen: true }), 1000)
+//setTimeout(() => render({ isOpen: false }), 2000)
+//setTimeout(() => render({ isOpen: true }), 3000)

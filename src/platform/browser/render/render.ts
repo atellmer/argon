@@ -19,8 +19,9 @@ import {
 	processDOM,
 	mount
 } from '../dom/dom';
-import { getVirtualDOM, buildVirtualNodeWithRoutes, getAttribute } from '../../../core/vdom/vdom';
+import { getVirtualDOM, buildVirtualNodeWithRoutes, getAttribute, VirtualNodeType } from '../../../core/vdom/vdom';
 import { makeEvents } from '../events/events';
+import { defragment } from '../fragment/fragment';
 
 
 function renderComponent(componentFactory: StatefullComponentFactoryType | StatelessComponentFactoryType, container: HTMLElement) {
@@ -40,6 +41,7 @@ function renderComponent(componentFactory: StatefullComponentFactoryType | State
 		const registry = getRegistery();
 		const app = createApp(container);
 
+
 		registry.set(uidMounted, app);
 		setUIDActive(uidMounted);
 
@@ -51,16 +53,7 @@ function renderComponent(componentFactory: StatefullComponentFactoryType | State
 			vNode = wire(statefullComponentFactory);
 		}
 
-		const transitChildren = [];
-		vNode.children.forEach((vNode) => {
-			if (getAttribute(vNode, ATTR_FRAGMENT)) {
-				transitChildren.push(...vNode.children);
-			} else {
-				transitChildren.push(vNode);
-			}
-		});
-
-		vNode.children = transitChildren;
+		vNode = defragment(vNode);
 
 		app.queue.push(() => makeEvents(vNode, uidMounted));
 		vNode = buildVirtualNodeWithRoutes(vNode);

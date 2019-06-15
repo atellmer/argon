@@ -13,6 +13,22 @@ function fragment(nestedContent: VirtualNodeType | Array<VirtualNodeType>) {
 	return dom`<fragment ${ATTR_FRAGMENT}="true">${list}</fragment>`;
 }
 
+function defragment(vNode: VirtualNodeType): VirtualNodeType {
+	const defragmentedChildren = [];
+	const mapChildrenFn = (vNode: VirtualNodeType) => vNode = defragment(vNode);
+	const mapTransitChildrenFn = (vNode: VirtualNodeType) => {
+		const isFragment = getAttribute(vNode, ATTR_FRAGMENT);
+		defragmentedChildren.push(...isFragment ? vNode.children : [vNode]);
+		defragmentedChildren.forEach(mapChildrenFn);
+	};
+
+	vNode.children.forEach(mapTransitChildrenFn);
+	vNode.children = defragmentedChildren;
+
+	return vNode;
+}
+
+
 function getIsFragment(vNode: VirtualNodeType): boolean {
 	return Boolean(getAttribute(vNode as VirtualNodeType, ATTR_FRAGMENT));
 }
@@ -20,5 +36,6 @@ function getIsFragment(vNode: VirtualNodeType): boolean {
 
 export {
 	fragment,
+	defragment,
 	getIsFragment
 }

@@ -74,6 +74,7 @@ import {
 	removeAttribute
 } from '../../../core/vdom/vdom';
 import { makeEvents } from '../events/events';
+import { defragment } from '../fragment/fragment';
 
 
 function createCommentStr(str: string): string {
@@ -342,24 +343,11 @@ function processDOM(vNode: VirtualNodeType = null, nextVNode: VirtualNodeType = 
 	const prevRoute = [...vNode.route];
 
 	app.queue.push(() => makeEvents(nextVNode, uid));
-	
-	const transitChildren = [];
-	nextVNode.children.forEach((vNode) => {
-		if (getAttribute(vNode, ATTR_FRAGMENT)) {
-			transitChildren.push(...vNode.children);
-		} else {
-			transitChildren.push(vNode);
-		}
-	});
-	
-	nextVNode.children = transitChildren;
+	nextVNode = defragment(nextVNode);
 	nextVNode = buildVirtualNodeWithRoutes(nextVNode, prevRoute, prevRoute.length, 0, true);
-	console.log('vNode', deepClone(vNode))
-	console.log('nextVNode', deepClone(nextVNode))
-
 	const diff = getVirtualDOMDiff(vNode, nextVNode);
 	
-	console.log('[diff]', diff)
+	console.log('[diff]', diff);
 
 	patchDOM(diff, $node, uid);
 	app.queue.forEach(fn => fn());
@@ -380,6 +368,7 @@ function forceUpdate(instance: ComponentType, params = { beforeRender: () => {},
 	processDOM(id, uid);
 	afterRender();
 }
+
 
 export {
 	ElementReplacerType,
