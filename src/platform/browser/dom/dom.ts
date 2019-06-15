@@ -81,11 +81,11 @@ function createCommentStr(str: string): string {
 	return `<!--${str}-->`;
 }
 
-function transformTemplateStringToVirtualDOM(string: TemplateStringsArray, args: Array<any>): VirtualNodeType {
+function transformTemplateStringToVirtualDOM(string: TemplateStringsArray, args: Array<any>): VirtualNodeType | Array<VirtualNodeType> {
 	const separator = NODE_SEPARATOR;
 	let markup = string.join(separator);
 	let sourceVNode = null;
-	let vNode: VirtualNodeType = null;
+	let vNode: VirtualNodeType | Array<VirtualNodeType> = null;
 	const uid = getUIDActive();
 	const app = getRegistery().get(uid);
 	const elements: Array<ElementReplacerType<any>> = [];
@@ -139,43 +139,40 @@ function transformTemplateStringToVirtualDOM(string: TemplateStringsArray, args:
 	elements.push({ type: QUEUE_EVENTS, value: eventMap });
 	sourceVNode = createVirtualDOMFromSource(markup);
 	sourceVNode = sourceVNode.length > 1 ? sourceVNode : sourceVNode[0];
-
-	if (isArray(sourceVNode)) {
-		const transitList = [...sourceVNode];
-		const replacers = [
-			NODE_REPLACER,
-			NODE_LIST_REPLACER,
-			STATELESS_COMPONENT_REPLACER,
-			STATELESS_COMPONENT_LIST_REPLACER,
-			STATEFULL_COMPONENT,
-			STATEFULL_COMPONENT_LIST
-		];
-		const mapNodesFn = (vNode: VirtualNodeType) => {
-			if (vNode.type === VDOM_ELEMENT_TYPES.COMMENT && replacers.includes(vNode.content)) {
-				const findContentFn = (comparedVNode: VirtualNodeType) => comparedVNode.content === vNode.content;
-				const idx = transitList.findIndex(findContentFn);
-				const mountedVNode = mountVirtualDOM(vNode, elements, null);
-
-				if (isArray(mountedVNode)) {
-					transitList.splice(idx, 1, ...(mountedVNode as any));
-				} else {
-					transitList[idx] = mountedVNode;
-				}
-			}
-		};
-
-		sourceVNode.forEach(mapNodesFn);
-		sourceVNode = transitList;
-	}
-
-	vNode = mountVirtualDOM(sourceVNode, elements);
-
-	!isArray(vNode) && (vNode.children = flatten(vNode.children));
+	vNode = isArray(sourceVNode) ? mountVirtualDOMList(sourceVNode, elements) : mountVirtualDOM(sourceVNode, elements);
 
 	return vNode;
 }
 
-function dom(string: TemplateStringsArray, ...args: Array<any>): VirtualNodeType {
+function mountVirtualDOMList(vNode: Array<VirtualNodeType>, elements: Array<ElementReplacerType<any>>): Array<VirtualNodeType> {
+	const vNodeList = vNode as  Array<VirtualNodeType>;
+	const replacers = [
+		NODE_REPLACER,
+		NODE_LIST_REPLACER,
+		STATELESS_COMPONENT_REPLACER,
+		STATELESS_COMPONENT_LIST_REPLACER,
+		STATEFULL_COMPONENT_REPLACER,
+		STATEFULL_COMPONENT_LIST_REPLACER
+	];
+	const transitList = [...vNodeList];
+	const mapVNodeFn = (vNode: VirtualNodeType) => {
+		if (vNode.type === VDOM_ELEMENT_TYPES.COMMENT && replacers.includes(vNode.content)) {
+			const findContentFn = (comparedVNode: VirtualNodeType) => comparedVNode.content === vNode.content;
+			const idx = transitList.findIndex(findContentFn);
+			const mountedVNode = mountVirtualDOM(vNode, elements);
+
+			transitList[idx] = mountedVNode;
+		}
+	};
+	const mapTransitVNodeFn = vNode => vNode = mountVirtualDOM(vNode, elements);
+
+	vNodeList.forEach(mapVNodeFn);
+	transitList.forEach(mapTransitVNodeFn);
+
+	return transitList;
+}
+
+function dom(string: TemplateStringsArray, ...args: Array<any>): VirtualNodeType | Array<VirtualNodeType> {
 	const vNode = transformTemplateStringToVirtualDOM(string, args);
 
 	return vNode;

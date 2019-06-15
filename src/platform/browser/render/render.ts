@@ -22,6 +22,7 @@ import {
 import { getVirtualDOM, buildVirtualNodeWithRoutes, getAttribute, VirtualNodeType } from '../../../core/vdom/vdom';
 import { makeEvents } from '../events/events';
 import { defragment } from '../fragment/fragment';
+import { deepClone } from '../../../helpers';
 
 
 function renderComponent(componentFactory: StatefullComponentFactoryType | StatelessComponentFactoryType, container: HTMLElement) {

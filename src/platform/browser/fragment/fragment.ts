@@ -1,7 +1,7 @@
 import { VirtualNodeType, getAttribute } from '../../../core/vdom/vdom';
 import { ATTR_FRAGMENT, ATTR_FRAGMENT_CHILD } from '../../../core/constants/constants';
 import { dom } from '../dom/dom';
-import { isArray } from '../../../helpers';
+import { isArray, isNull, isEmpty, isObject } from '../../../helpers';
 import { setAttribute } from '../../../core/vdom/vdom';
 
 
@@ -14,23 +14,23 @@ function fragment(nestedContent: VirtualNodeType | Array<VirtualNodeType>) {
 }
 
 function defragment(vNode: VirtualNodeType): VirtualNodeType {
-	const defragmentedChildren = [];
+	const defragmented = [];
 	const mapChildrenFn = (vNode: VirtualNodeType) => vNode = defragment(vNode);
 	const mapTransitChildrenFn = (vNode: VirtualNodeType) => {
-		const isFragment = getAttribute(vNode, ATTR_FRAGMENT);
-		defragmentedChildren.push(...isFragment ? vNode.children : [vNode]);
-		defragmentedChildren.forEach(mapChildrenFn);
+		defragmented.push(...getIsFragment(vNode) ? vNode.children : [vNode]);
+		defragmented.forEach(mapChildrenFn);
 	};
 
+	if (isNull(vNode)) return null;
+
 	vNode.children.forEach(mapTransitChildrenFn);
-	vNode.children = defragmentedChildren;
+	vNode.children = defragmented;
 
 	return vNode;
 }
 
-
 function getIsFragment(vNode: VirtualNodeType): boolean {
-	return Boolean(getAttribute(vNode as VirtualNodeType, ATTR_FRAGMENT));
+	return !isEmpty(vNode) && isObject(vNode) && Boolean(getAttribute(vNode as VirtualNodeType, ATTR_FRAGMENT));
 }
 
 
