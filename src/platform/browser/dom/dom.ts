@@ -146,6 +146,7 @@ function transformTemplateStringToVirtualDOM(string: TemplateStringsArray, args:
 	elements.push({ type: QUEUE_EVENTS, value: eventMap });
 	sourceVNode = createVirtualDOMFromSource(markup);
 	sourceVNode = sourceVNode.length > 1 ? sourceVNode : sourceVNode[0];
+
 	vNode = isArray(sourceVNode) ? mountVirtualDOMList(sourceVNode, elements) : mountVirtualDOM(sourceVNode, elements);
 
 	return vNode;

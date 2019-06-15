@@ -234,6 +234,10 @@ function createVirtualDOMFromSource(source: string): Array<VirtualNodeType> {
 
   source.replace(tagPattern, replaceSource);
 
+  if (source && typeof source === 'string' && result.length === 0) {
+    result.push(createTextNode(source));
+  }
+  
   return result;
 }
 

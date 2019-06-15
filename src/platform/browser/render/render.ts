@@ -1,4 +1,4 @@
-import { ATTR_ROOT_APP } from '../../../core/constants/constants';
+import { ATTR_ROOT_APP, EMPTY_REPLACER } from '../../../core/constants/constants';
 import {
 	createApp,
 	getRegistery,
@@ -16,9 +16,10 @@ import {
 	processDOM,
 	mount
 } from '../dom/dom';
-import { getVirtualDOM, buildVirtualNodeWithRoutes, VirtualNodeType } from '../../../core/vdom/vdom';
+import { getVirtualDOM, buildVirtualNodeWithRoutes, VirtualNodeType, createCommentNode } from '../../../core/vdom/vdom';
 import { makeEvents } from '../events/events';
 import { defragment, getIsFragment } from '../../../core/fragment/fragment';
+import { isNull } from '../../../helpers';
 
 
 function renderComponent(componentFactory: StatefullComponentFactoryType | StatelessComponentFactoryType, container: HTMLElement) {
@@ -49,6 +50,11 @@ function renderComponent(componentFactory: StatefullComponentFactoryType | State
 			vNode = wire(statefullComponentFactory);
 		}
 
+
+		if (isNull(vNode)) {
+			vNode = createCommentNode(EMPTY_REPLACER);
+		}
+
 		vNode = defragment(vNode);
 		app.queue.push(() => makeEvents(vNode, uidMounted));
 		vNode = buildVirtualNodeWithRoutes(vNode);
@@ -77,6 +83,10 @@ function renderComponent(componentFactory: StatefullComponentFactoryType | State
 
 		if (statefullComponentFactory.isStatefullComponent) {
 			nextVNode = wire(statefullComponentFactory);
+		}
+
+		if (isNull(nextVNode)) {
+			nextVNode = createCommentNode(EMPTY_REPLACER);
 		}
 
 		vNode.route = [0];
