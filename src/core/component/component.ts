@@ -249,9 +249,9 @@ function createComponent(defObj: ComponentDefType | Function, options: Component
 			const isStateless = isFunction(def);
 			const displayName = def.displayName || (options ? options.displayName : '');
 			const defaultProps = isStateless
-				? options && options.defaultProps ? options.defaultProps : {}
+				? options && options.defaultProps ? sanitize(options.defaultProps) : {}
 				: getDefaultProps(def);
-			const computedProps = { ...defaultProps, ...props };
+			const computedProps = { ...defaultProps, ...sanitize(props) };
 			const factory = isStateless
 				? {
 						isStatelessComponent: true,

@@ -1,34 +1,23 @@
 import * as Argon from '../src';
 
 
-const Item = Argon.createComponent(({ id }) => {
-	return Argon.fragment(Argon.dom`
-		<div>fragment ${id} start</div>	
-		<div>fragment ${id} end</div>
-		<button on:click="${() => console.log('click', id)}">Click</button>
-	`)
-}, { displayName: 'Item' });
+const Input = Argon.createComponent(({ value, setValue }) => Argon.fragment(
+	Argon.dom`
+	<input value="${value}" on:input="${setValue}" />
+	<div>Text: ${value}</div>
+	`
+));
+const render = (props) => Argon.renderComponent(Input(props), document.getElementById('app'))
+
+let value = '';
+const setValue = (e) => {
+	value = e.target.value;
+	render({ value, setValue })
+} 
+render({ value, setValue })
 
 
-const App = Argon.createComponent(({ isOpen }) => {
 
-	return Argon.fragment(Argon.dom`
-		<div>App</div>
-		${Item({ id: 1 })}
-		${isOpen && Item({ id: 2 })}
-		<div>
-			<div>
-				${Item({ id: 3 })}
-			</div>
-		</div>
-	`)
-}, { displayName: 'App' });
+//${'\u02c2'}div${'\u02c3'}text${'\u02c2'}${'\u002f'}div${'\u02c3'}
 
 
-const render = (...args) => Argon.renderComponent(App(...args), document.getElementById('app'))
-
-render({ isOpen: false });
-
-//setTimeout(() => render({ isOpen: true }), 1000)
-//setTimeout(() => render({ isOpen: false }), 2000)
-//setTimeout(() => render({ isOpen: true }), 3000)

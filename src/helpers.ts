@@ -38,14 +38,17 @@ function getUniqList(list, fn) {
 	return iniqList;
 }
 
-function escapeTags(str) {
-	const tagsToReplace = {
-		'<': '&lt;',
-		'>': '&gt;'
+function escapeTags(str: string) {
+	const map = {
+		'<': '\u02c2',
+		'>': '\u02c3',
+		'/': '\u002f',
+		'&': '\u0026',
+		'"': '\u02ba',
+		'\'': '\u02b9',
 	};
-	const replaceTag = (tag) => tagsToReplace[tag] || tag;
 
-	return str.replace(/[<>]/g, replaceTag);
+	return str.replace(/(.)/gm, (char: string) => map[char] || char);
 }
 
 function sanitize(o = {}) {
