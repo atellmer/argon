@@ -21,14 +21,12 @@ function fragment(nestedContent: VirtualNodeType | Array<VirtualNodeType>) {
 function defragment(vNode: VirtualNodeType): VirtualNodeType {
 	const defragmented = [];
 	const mapChildrenFn = (vNode: VirtualNodeType) => vNode = defragment(vNode);
-	const mapTransitChildrenFn = (vNode: VirtualNodeType) => {
-		defragmented.push(...getIsFragment(vNode) ? vNode.children : [vNode]);
-		defragmented.forEach(mapChildrenFn);
-	};
+	const mapTransitChildrenFn = (vNode: VirtualNodeType) => defragmented.push(...getIsFragment(vNode) ? vNode.children : [vNode]);
 
 	if (isNull(vNode)) return null;
 
 	vNode.children.forEach(mapTransitChildrenFn);
+	defragmented.forEach(mapChildrenFn);
 	vNode.children = defragmented;
 
 	return vNode;
