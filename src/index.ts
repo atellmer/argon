@@ -1,10 +1,10 @@
 import {
 	createComponent,
+	fragment
 } from './core';
 import {
 	renderComponent,
 	dom,
-	fragment
 } from './platform/browser';
 
 

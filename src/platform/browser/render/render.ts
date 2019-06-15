@@ -1,7 +1,4 @@
-import {
-	ATTR_ROOT_APP,
-	ATTR_FRAGMENT
-} from '../../../core/constants/constants';
+import { ATTR_ROOT_APP } from '../../../core/constants/constants';
 import {
 	createApp,
 	getRegistery,
@@ -19,10 +16,9 @@ import {
 	processDOM,
 	mount
 } from '../dom/dom';
-import { getVirtualDOM, buildVirtualNodeWithRoutes, getAttribute, VirtualNodeType } from '../../../core/vdom/vdom';
+import { getVirtualDOM, buildVirtualNodeWithRoutes, VirtualNodeType } from '../../../core/vdom/vdom';
 import { makeEvents } from '../events/events';
-import { defragment } from '../fragment/fragment';
-import { deepClone } from '../../../helpers';
+import { defragment, getIsFragment } from '../../../core/fragment/fragment';
 
 
 function renderComponent(componentFactory: StatefullComponentFactoryType | StatelessComponentFactoryType, container: HTMLElement) {
@@ -33,7 +29,7 @@ function renderComponent(componentFactory: StatefullComponentFactoryType | State
 
 	if (!getRegistery().get(uidMounted)) {
 		container.innerHTML = '';
-		let vNode = null;
+		let vNode: VirtualNodeType = null;
 
 		if (!container.getAttribute(ATTR_ROOT_APP)) {
 			container.setAttribute(ATTR_ROOT_APP, uidMounted.toString());
@@ -41,7 +37,6 @@ function renderComponent(componentFactory: StatefullComponentFactoryType | State
 
 		const registry = getRegistery();
 		const app = createApp(container);
-
 
 		registry.set(uidMounted, app);
 		setUIDActive(uidMounted);
@@ -55,11 +50,17 @@ function renderComponent(componentFactory: StatefullComponentFactoryType | State
 		}
 
 		vNode = defragment(vNode);
-
 		app.queue.push(() => makeEvents(vNode, uidMounted));
 		vNode = buildVirtualNodeWithRoutes(vNode);
 		app.vdom = vNode;
-		container.appendChild(mount(vNode));
+
+		if (getIsFragment(vNode)) {
+			const mountNodesFn = (vNode: VirtualNodeType) => container.appendChild(mount(vNode));
+			vNode.children.forEach(mountNodesFn);
+		} else {
+			container.appendChild(mount(vNode));
+		}
+
 		app.queue.forEach(fn => fn());
 		app.queue = [];
 	} else if (isMounted) {
@@ -79,14 +80,14 @@ function renderComponent(componentFactory: StatefullComponentFactoryType | State
 		}
 
 		vNode.route = [0];
-		processDOM(vNode, nextVNode);
+		nextVNode = defragment(nextVNode);
+		processDOM({ vNode, nextVNode, fragment: getIsFragment(nextVNode) });
 	} else {
 		setUIDMounted(uidMounted + 1);
 		setCurrentMountedComponentId(null);
 		renderComponent(componentFactory, container);
 	}
 }
-
 
 export {
 	renderComponent

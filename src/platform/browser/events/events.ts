@@ -1,13 +1,16 @@
-import { VirtualNodeType } from '../../../core/vdom';
+import { VirtualNodeType, getVirtualDOM } from '../../../core/vdom';
 import { getRegistery } from '../../../core/scope/scope';
 import { EVENT_HANDLER_REPLACER, VDOM_ELEMENT_TYPES } from '../../../core/constants/constants';
 import { getDOMElementByRoute } from '../dom/dom';
 import { isFunction } from '../../../helpers';
+import { getIsFragment } from '../../../core/fragment/fragment';
 
 
 function makeEvents(vNode: VirtualNodeType, uid: number) {
 	const app = getRegistery().get(uid);
-	const rootEl = app.nativeElement;
+	const vdom = getVirtualDOM(uid);
+	const isFragment = getIsFragment(vdom);
+	const rootDOMElement = isFragment ? app.nativeElement : app.nativeElement.children[0] as HTMLElement;
 
 	if (vNode.type === VDOM_ELEMENT_TYPES.TAG) {
 		const filterNodeFn = (vNode: VirtualNodeType) => vNode.type === VDOM_ELEMENT_TYPES.TAG;
@@ -16,11 +19,11 @@ function makeEvents(vNode: VirtualNodeType, uid: number) {
 		const chidren = vNode.children.filter(filterNodeFn);
 		const mapAttrsFn = (attrName: string) => {
 			if (vNode.attrs[attrName] === EVENT_HANDLER_REPLACER && /^on:/.test(attrName)) {
-				const node = getDOMElementByRoute(rootEl.children[0] as HTMLElement, [...vNode.route]);
+				const node = getDOMElementByRoute(rootDOMElement, [...vNode.route]);
 				const eventName = attrName.slice(3, attrName.length);
 				const handler = app.eventHandlersCache[0];
 
-				delegateEvent(rootEl, uid, node, eventName, handler);
+				delegateEvent(rootDOMElement, uid, node, eventName, handler);
 				app.eventHandlersCache.splice(0, 1);
 			}
 		};
@@ -31,7 +34,7 @@ function makeEvents(vNode: VirtualNodeType, uid: number) {
 	}
 }
 
-function delegateEvent(rootEl: HTMLElement, uid: number, node: HTMLElement, eventName: string, handler: (e: Event) => void) {
+function delegateEvent(rootDOMElement: HTMLElement, uid: number, node: HTMLElement, eventName: string, handler: (e: Event) => void) {
 	const app = getRegistery().get(uid);
 	const eventHandler = (e: Event) => node === e.target && handler(e);
 
@@ -49,8 +52,8 @@ function delegateEvent(rootEl: HTMLElement, uid: number, node: HTMLElement, even
 	isFunction(app.eventHandlers.get(node)[eventName].removeEvent) && app.eventHandlers.get(node)[eventName].removeEvent();
 
 	app.eventHandlers.get(node)[eventName] = {
-		addEvent: () => rootEl.addEventListener(eventName, eventHandler),
-		removeEvent: () => rootEl.removeEventListener(eventName, eventHandler)
+		addEvent: () => rootDOMElement.addEventListener(eventName, eventHandler),
+		removeEvent: () => rootDOMElement.removeEventListener(eventName, eventHandler)
 	};
 
 	app.eventHandlers.get(node)[eventName].addEvent();

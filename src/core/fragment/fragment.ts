@@ -1,16 +1,21 @@
-import { VirtualNodeType, getAttribute } from '../../../core/vdom/vdom';
-import { ATTR_FRAGMENT, ATTR_FRAGMENT_CHILD } from '../../../core/constants/constants';
-import { dom } from '../dom/dom';
-import { isArray, isNull, isEmpty, isObject } from '../../../helpers';
-import { setAttribute } from '../../../core/vdom/vdom';
+import { VirtualNodeType, getAttribute } from '../vdom/vdom';
+import { ATTR_FRAGMENT, VDOM_ELEMENT_TYPES } from '../constants/constants';
+import { isArray, isNull, isEmpty, isObject } from '../../helpers';
+import { VirtualNodeTagType, setAttribute, createVirtualNode } from '../vdom/vdom';
 
 
 function fragment(nestedContent: VirtualNodeType | Array<VirtualNodeType>) {
 	const list = (isArray(nestedContent) ? nestedContent : [nestedContent]) as Array<VirtualNodeType>;
 
-	list.forEach(vNode => setAttribute(vNode, ATTR_FRAGMENT_CHILD, true));
+	//list.forEach(vNode => setAttribute(vNode, ATTR_FRAGMENT_CHILD, true));
 
-	return dom`<fragment ${ATTR_FRAGMENT}="true">${list}</fragment>`;
+	const vNode = createVirtualNode(VDOM_ELEMENT_TYPES.TAG as VirtualNodeTagType, {
+		attrs: { [ATTR_FRAGMENT]: true },
+		name: 'fragment',
+		children: list
+	});
+
+	return vNode;
 }
 
 function defragment(vNode: VirtualNodeType): VirtualNodeType {
@@ -32,7 +37,6 @@ function defragment(vNode: VirtualNodeType): VirtualNodeType {
 function getIsFragment(vNode: VirtualNodeType): boolean {
 	return !isEmpty(vNode) && isObject(vNode) && Boolean(getAttribute(vNode as VirtualNodeType, ATTR_FRAGMENT));
 }
-
 
 export {
 	fragment,

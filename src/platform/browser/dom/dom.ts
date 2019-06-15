@@ -74,8 +74,15 @@ import {
 	removeAttribute
 } from '../../../core/vdom/vdom';
 import { makeEvents } from '../events/events';
-import { defragment } from '../fragment/fragment';
+import { defragment } from '../../../core/fragment/fragment';
 
+
+type ProcessDOMOptionsType = {
+	vNode: VirtualNodeType;
+	nextVNode: VirtualNodeType;
+	container?: HTMLElement;
+	fragment?: boolean;
+}
 
 function createCommentStr(str: string): string {
 	return `<!--${str}-->`;
@@ -180,7 +187,6 @@ function dom(string: TemplateStringsArray, ...args: Array<any>): VirtualNodeType
 
 function mount(vdom: VirtualNodeType | Array<VirtualNodeType>, parentNode: HTMLElement = null): HTMLElement | Text | Comment {
 	let container: HTMLElement | Text | Comment = parentNode;
-	const uid = getUIDActive();
 	const attrValueBlackList = [EVENT_HANDLER_REPLACER];
 	const mapVDOM = (vNode: VirtualNodeType) => {
 		if (!vNode) return;
@@ -333,20 +339,21 @@ function patchDOM(diff: Array<VirtualDOMDiffType>, $node: HTMLElement, uid: numb
 	diff.forEach(mapDiff);
 }
 
-function processDOM(vNode: VirtualNodeType = null, nextVNode: VirtualNodeType = null, $container: HTMLElement = null) {
+function processDOM({ vNode = null, nextVNode = null, container = null, fragment = false }: ProcessDOMOptionsType) {
 	const uid = getUIDActive();
 	const app = getRegistery().get(uid);
-	const $node = $container || app.nativeElement.children[0] as HTMLElement;
+	const DOMElement = container || (fragment ? app.nativeElement : app.nativeElement.children[0]) as HTMLElement;
 	const prevRoute = [...vNode.route];
+	let diff = [];
 
 	app.queue.push(() => makeEvents(nextVNode, uid));
 	nextVNode = defragment(nextVNode);
 	nextVNode = buildVirtualNodeWithRoutes(nextVNode, prevRoute, prevRoute.length, 0, true);
-	const diff = getVirtualDOMDiff(vNode, nextVNode);
-	
+	diff = getVirtualDOMDiff(vNode, nextVNode);
+
 	console.log('[diff]', diff);
 
-	patchDOM(diff, $node, uid);
+	patchDOM(diff, DOMElement, uid);
 	app.queue.forEach(fn => fn());
 	app.queue = [];
 	app.vdom = nextVNode;
@@ -362,7 +369,7 @@ function forceUpdate(instance: ComponentType, params = { beforeRender: () => {},
 	setUIDActive(instance[$$uid]);
 
 	beforeRender();
-	processDOM(id, uid);
+	//processDOM({});
 	afterRender();
 }
 

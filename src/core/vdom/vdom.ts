@@ -19,9 +19,7 @@ import {
 	ATTR_PORTAL_ID,
   VDOM_ELEMENT_TYPES,
   VDOM_ACTIONS,
-  QUEUE_EVENTS,
-  ATTR_FRAGMENT,
-  ATTR_FRAGMENT_CHILD
+  QUEUE_EVENTS
 } from '../constants';
 import { isEmpty, isFunction, deepClone } from '../../helpers';
 import {
@@ -113,47 +111,39 @@ const voidAttrsMap = {
   hidden: true
 };
 
-function createTextNode(content: string): VirtualNodeType {
-  return {
-    type: VDOM_ELEMENT_TYPES.TEXT as VirtualNodeTagType,
-    isVirtualNode: true,
-    void: true,
-    attrs: null,
-    name: null,
-    children: [],
-		route: [],
-		processed: false,
-    content
-  };
-}
-
-function createCommentNode(content: string): VirtualNodeType {
-  return {
-    type: VDOM_ELEMENT_TYPES.COMMENT as VirtualNodeTagType,
-    isVirtualNode: true,
-    void: true,
-    name: null,
-    attrs: null,
-    children: [],
-		route: [],
-		processed: false,
-    content
-  };
-}
-
-function createElement(tag: string): VirtualNodeType {
-  let tagReplaced = false;
-  let key = '';
-  const element = {
-    isVirtualNode: true,
-    type: VDOM_ELEMENT_TYPES.TAG as VirtualNodeTagType,
+function createVirtualNode(type: VirtualNodeTagType, config: HashMap<any> = {}) {
+	return {
     name: null,
     void: false,
     attrs: {},
     children: [],
 		route: [],
-		processed: false
-  };
+		props: {},
+		processed: false,
+		...config,
+		type,
+		isVirtualNode: true
+	};
+}
+
+function createTextNode(content: string): VirtualNodeType {
+	return createVirtualNode(VDOM_ELEMENT_TYPES.TEXT as VirtualNodeTagType, {
+    void: true,
+    content
+  });
+}
+
+function createCommentNode(content: string): VirtualNodeType {
+	return createVirtualNode(VDOM_ELEMENT_TYPES.COMMENT as VirtualNodeTagType, {
+    void: true,
+    content
+	});
+}
+
+function createElement(tag: string): VirtualNodeType {
+  let tagReplaced = false;
+  let key = '';
+	const element = createVirtualNode(VDOM_ELEMENT_TYPES.TAG as VirtualNodeTagType);
 
   const replaceTag = (match: string) => {
     if (!tagReplaced) {
@@ -704,7 +694,8 @@ export {
   VirtualNodeType,
   VirtualDOMActionsType,
   VirtualDOMDiffType,
-  ElementReplacerType,
+	ElementReplacerType,
+	createVirtualNode,
   createTextNode,
   createCommentNode,
   createElement,
