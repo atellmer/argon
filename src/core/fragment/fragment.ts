@@ -1,13 +1,11 @@
 import { VirtualNodeType, getAttribute } from '../vdom/vdom';
 import { ATTR_FRAGMENT, VDOM_ELEMENT_TYPES } from '../constants/constants';
 import { isArray, isNull, isEmpty, isObject } from '../../helpers';
-import { VirtualNodeTagType, setAttribute, createVirtualNode } from '../vdom/vdom';
+import { VirtualNodeTagType, createVirtualNode } from '../vdom/vdom';
 
 
 function fragment(nestedContent: VirtualNodeType | Array<VirtualNodeType>) {
 	const list = (isArray(nestedContent) ? nestedContent : [nestedContent]) as Array<VirtualNodeType>;
-
-	//list.forEach(vNode => setAttribute(vNode, ATTR_FRAGMENT_CHILD, true));
 
 	const vNode = createVirtualNode(VDOM_ELEMENT_TYPES.TAG as VirtualNodeTagType, {
 		attrs: { [ATTR_FRAGMENT]: true },

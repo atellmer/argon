@@ -1,19 +1,41 @@
 import * as Argon from '../src';
 
 
-const Timer = Argon.createComponent(({ tick }) => {
-	if (tick >= 10 && tick <= 15) {
-		return null;
-	}
-
+const Item = Argon.createComponent(() => {
 	return Argon.dom`
-		<div>Time: ${tick}</div>
+		<div>Item</div>
 	`
 });
-const render = (props) => Argon.renderComponent(Timer(props), document.getElementById('app'))
 
-let tick = 0;
-render({ tick })
-setInterval(() => render({ tick: ++tick }), 1000);
+
+const Header = Argon.createComponent(() => {
+	return Argon.dom`
+		<div>
+			${Argon.list(() => [1, 2, 3, 4, 5].map(x => Argon.dom`<div xxx="">item: ${x}</div>`))}
+		</div>
+	`
+});
+
+const Footer = Argon.createComponent(() => {
+	return Argon.dom`
+		<div>
+			Footer
+		</div>
+	`
+});
+
+const App = Argon.createComponent(() => {
+
+	return Argon.dom`
+		<div>
+			${Header()}
+			<div>App</div>
+			${Footer()}
+		</div>
+	`
+});
+
+
+Argon.renderComponent(App({}), document.getElementById('app'))
 
 

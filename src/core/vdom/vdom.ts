@@ -25,7 +25,8 @@ import { isEmpty, isFunction, deepClone } from '../../helpers';
 import {
   getUIDActive,
   getRegistery,
-  getCurrentMountedComponentId
+	getCurrentMountedComponentId,
+	setCurrentMountedRoute
 } from '../scope';
 import {
   StatefullComponentFactoryType,
@@ -49,6 +50,7 @@ type VirtualNodeType = {
   children: Array<VirtualNodeType>;
   props?: any;
 	route: Array<number>;
+	route2: Array<number>;
 	processed: boolean;
 };
 
@@ -118,6 +120,7 @@ function createVirtualNode(type: VirtualNodeTagType, config: HashMap<any> = {}) 
     attrs: {},
     children: [],
 		route: [],
+		route2: [],
 		props: {},
 		processed: false,
 		...config,
@@ -485,18 +488,26 @@ function mountVirtualDOM(
 			const nextVNode = elements[elementIdx].value;
 
 			elements.splice(elementIdx, 1);
+			nextVNode.route2 = mountedVNode.route2;
+
+			setCurrentMountedRoute(nextVNode.route2);
+
 			if (parentVNode) {
-				parentVNode.children[vNodeIdx] = nextVNode
+				parentVNode.children[vNodeIdx] = nextVNode;
 			} else {
 				return nextVNode;
-			};
+			}
     } else if (textContent === NODE_LIST_REPLACER) {
       const findElementFn = (e: ElementReplacerType<Array<HTMLElement>>) => e.type === NODE_LIST;
       const findVNodeFn = (vNode: VirtualNodeType) => vNode.type === VDOM_ELEMENT_TYPES.COMMENT && vNode.content === NODE_LIST_REPLACER;
       const elementIdx = elements.findIndex(findElementFn);
       const vNodeIdx = parentVNode && parentVNode.children.findIndex(findVNodeFn);
-      const nodeList = elements[elementIdx].value;
+			const nodeList = elements[elementIdx].value;
+			//const lastRouteIdx = mountedVNode.route2[mountedVNode.route2.length - 1];
+			//const slicedRoute = mountedVNode.route2.slice(0, -1);
       const mapNodesFn = (vNode: VirtualNodeType, idx: number) => {
+				//vNode.route2 = [...slicedRoute, lastRouteIdx + idx];
+				//setCurrentMountedRoute(vNode.route2);
 				parentVNode && parentVNode.children.splice(vNodeIdx + idx, 0, vNode);
 				return vNode;
 			};
@@ -509,7 +520,32 @@ function mountVirtualDOM(
 			} else {
 				return nodeList.map(mapNodesFn);
 			}
-    } else if (textContent === STATEFULL_COMPONENT_REPLACER) {
+		} else if (textContent === 'LIST_WRAPPER_REPLACER') {
+			const findElementFn = (e: ElementReplacerType<VirtualNodeType>) => e.type === 'LIST_WRAPPER';
+      const findVNodeFn = (vNode: VirtualNodeType) => vNode.type === VDOM_ELEMENT_TYPES.COMMENT && vNode.content === 'LIST_WRAPPER_REPLACER';
+			const elementIdx = elements.findIndex(findElementFn);
+			const vNodeIdx = parentVNode && parentVNode.children.findIndex(findVNodeFn);
+			const listWrapper = elements[elementIdx].value;
+
+			console.log('mountedVNode.route2', mountedVNode.route2)
+			setCurrentMountedRoute(mountedVNode.route2);
+
+			const list = listWrapper.createList();
+
+			const lastRouteIdx = mountedVNode.route2[mountedVNode.route2.length - 1];
+			const slicedRoute = mountedVNode.route2.slice(0, -1);
+			list.forEach((vNode, idx) => {
+				vNode.route2 = [...slicedRoute, lastRouteIdx + idx];
+			});
+
+			elements.splice(elementIdx, 1);
+
+			if (parentVNode) {
+				parentVNode.children.splice(vNodeIdx, 0, ...list);
+			} else {
+				return list;
+			}
+		} else if (textContent === STATEFULL_COMPONENT_REPLACER) {
       const findElementFn = (e: ElementReplacerType<StatefullComponentFactoryType>) =>  e.type === STATEFULL_COMPONENT;
       const findVNodeFn = (n: VirtualNodeType) => n.type === VDOM_ELEMENT_TYPES.COMMENT && n.content === STATEFULL_COMPONENT_REPLACER;
       const elementIdx = elements.findIndex(findElementFn);
@@ -605,13 +641,17 @@ function mountVirtualDOM(
 			const mapFns = (fn: Function) => fn();
 			const elementIdx = elements.findIndex(findElementFn);
       const vNodeIdx = parentVNode && parentVNode.children.findIndex(findVNodeFn);
-      const factory = elements[elementIdx].value as StatelessComponentFactoryType;
+			const factory = elements[elementIdx].value as StatelessComponentFactoryType;
+			
+			setCurrentMountedRoute(mountedVNode.route2);
+
       const nextVNode = factory.createElement();
       const queueEventsIdx = elements.findIndex(findQueueEventsFn);
       const queueEvents = elements[queueEventsIdx].value.get(factory) || [];
 
       elements.splice(elementIdx, 1);
 			queueEvents.forEach(mapFns);
+			nextVNode.route2 = mountedVNode.route2;
 
 			if (parentVNode) {
 				parentVNode.children[vNodeIdx] = nextVNode;
@@ -692,6 +732,7 @@ function getComponentVirtualNodeById(id: string,vNode: VirtualNodeType): Virtual
 
   return null;
 }
+
 
 export {
   VirtualNodeTagType,

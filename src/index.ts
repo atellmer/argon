@@ -1,5 +1,6 @@
 import {
 	createComponent,
+	list,
 	fragment
 } from './core';
 import {
@@ -10,6 +11,7 @@ import {
 
 export {
 	createComponent,
+	list,
 	renderComponent,
 	dom,
 	fragment

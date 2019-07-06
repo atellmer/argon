@@ -104,6 +104,11 @@ type StatelessComponentFactoryType = {
 	};
 }
 
+type ListWrapperType = {
+	isList: boolean;
+	createList: () => Array<Array<VirtualNodeType> | VirtualNodeType>;
+}
+
 type ComponentTreeType = HashMap<ComponentNodeType>;
 
 type ComponentNodeType = {
@@ -494,11 +499,25 @@ function unmountComponent(id: string, uid: number, parentInstance = null) {
 	getRegistery().set(uid, app);
 }
 
-function isStatefullComponent(o: StatefullComponentFactoryType) {
-	return isObject(o) && !isEmpty(o) && (o as StatefullComponentFactoryType).isStatefullComponent === true;
+function list(fn: () => Array<Array<VirtualNodeType> | VirtualNodeType>) {
+	return {
+		isList: true,
+		createList: fn
+	};
 }
+
+
+function isStatefullComponent(o: StatefullComponentFactoryType) {
+	return isObject(o) && !isEmpty(o) && o.isStatefullComponent === true;
+}
+
 function isStatelessComponent(o: StatelessComponentFactoryType) {
-	return isObject(o) && !isEmpty(o) && (o as StatelessComponentFactoryType).isStatelessComponent === true;
+	return isObject(o) && !isEmpty(o) && o.isStatelessComponent === true;
+}
+
+
+function isList(o: ListWrapperType) {
+	return isObject(o) && !isEmpty(o) && o.isList === true;
 }
 
 
@@ -516,5 +535,7 @@ export {
 	getPublicInstance,
 	unmountComponent,
 	isStatefullComponent,
-	isStatelessComponent
+	isStatelessComponent,
+	list,
+	isList
 }

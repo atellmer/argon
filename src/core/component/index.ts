@@ -13,7 +13,8 @@ import {
 	getPublicInstance,
 	unmountComponent,
 	isStatefullComponent,
-	isStatelessComponent
+	isStatelessComponent,
+	list
 } from './component';
 
 export {
@@ -30,5 +31,6 @@ export {
 	getPublicInstance,
 	unmountComponent,
 	isStatefullComponent,
-	isStatelessComponent
+	isStatelessComponent,
+	list
 }

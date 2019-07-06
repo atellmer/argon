@@ -9,6 +9,7 @@ type ScopeType = {
 		active: number;
 	},
 	currentMountedComponentId: string | null;
+	currentMountedRoute: Array<number>;
 }
 
 type AppType = {
@@ -33,6 +34,8 @@ const getUIDActive = (): number => scope.uid.active;
 const setUIDActive = (uid: number) => scope.uid.active = uid;
 const getCurrentMountedComponentId = (): string | null => scope.currentMountedComponentId;
 const setCurrentMountedComponentId = (id: string | null) => scope.currentMountedComponentId = id;
+const getCurrentMountedRoute = (): Array<number> => [...scope.currentMountedRoute];
+const setCurrentMountedRoute = (route: Array<number>) => scope.currentMountedRoute = route;
 
 function createScope(): ScopeType {
 	return {
@@ -42,6 +45,7 @@ function createScope(): ScopeType {
 			active: 0
 		},
 		currentMountedComponentId: null,
+		currentMountedRoute: []
 	};
 }
 
@@ -68,6 +72,8 @@ export {
 	setUIDActive,
 	getCurrentMountedComponentId,
 	setCurrentMountedComponentId,
+	getCurrentMountedRoute,
+	setCurrentMountedRoute,
 	createScope,
 	createApp
 }

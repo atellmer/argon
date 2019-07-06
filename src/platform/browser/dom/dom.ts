@@ -7,7 +7,8 @@ import {
 	unmountComponent,
 	getComponentId,
 	isStatefullComponent,
-	isStatelessComponent
+	isStatelessComponent,
+	isList
 } from '../../../core/component/component';
 import {
 	AppType,
@@ -15,7 +16,9 @@ import {
 	getRegistery,
 	getCurrentMountedComponentId,
 	setCurrentMountedComponentId,
-	setUIDActive
+	setUIDActive,
+	getCurrentMountedRoute,
+	setCurrentMountedRoute,
 } from '../../../core/scope/scope';
 import {
 	isObject,
@@ -91,7 +94,7 @@ function createCommentStr(str: string): string {
 function transformTemplateStringToVirtualDOM(string: TemplateStringsArray, args: Array<any>): VirtualNodeType | Array<VirtualNodeType> {
 	const separator = NODE_SEPARATOR;
 	let markup = string.join(separator);
-	let sourceVNode = null;
+	let sourceVNode: VirtualNodeType | Array<VirtualNodeType> = null;
 	let vNode: VirtualNodeType | Array<VirtualNodeType> = null;
 	const uid = getUIDActive();
 	const app = getRegistery().get(uid);
@@ -120,6 +123,9 @@ function transformTemplateStringToVirtualDOM(string: TemplateStringsArray, args:
 		} else if (isArray(arg) && isVirtualNode(arg[0])) {
 			replacer = createCommentStr(NODE_LIST_REPLACER);
 			elements.push({ type: NODE_LIST, value: arg });
+		} else if (isList(arg)) {
+			replacer = createCommentStr('LIST_WRAPPER_REPLACER');
+			elements.push({ type: 'LIST_WRAPPER', value: arg });
 		} else if (isFunction(arg)) {
 			replacer = EVENT_HANDLER_REPLACER;
 			const findFactoryFn = (a: any) => isArray(a) ? isStatelessComponent(a[0]) : isStatelessComponent(a);
@@ -143,11 +149,28 @@ function transformTemplateStringToVirtualDOM(string: TemplateStringsArray, args:
 	};
 
 	args.forEach(mapArgsFn);
+
 	elements.push({ type: QUEUE_EVENTS, value: eventMap });
 	sourceVNode = createVirtualDOMFromSource(markup);
 	sourceVNode = sourceVNode.length > 1 ? sourceVNode : sourceVNode[0];
 
-	vNode = isArray(sourceVNode) ? mountVirtualDOMList(sourceVNode, elements) : mountVirtualDOM(sourceVNode, elements);
+	const currentRoute = getCurrentMountedRoute();
+
+	if (!isArray(sourceVNode) && (sourceVNode as VirtualNodeType).type === 'TAG') {
+		const children = (sourceVNode as VirtualNodeType).children;
+
+		children.forEach((vNode, idx) => {
+			vNode.route2 = [...currentRoute, idx];
+		});
+	}
+
+	//console.log('dom', deepClone(sourceVNode))
+
+	vNode = isArray(sourceVNode)
+		? mountVirtualDOMList(sourceVNode as Array<VirtualNodeType>, elements)
+		: mountVirtualDOM(sourceVNode as VirtualNodeType, elements);
+
+	console.log('vNode', vNode)
 
 	return vNode;
 }

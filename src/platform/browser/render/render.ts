@@ -5,7 +5,8 @@ import {
 	getUIDMounted,
 	setUIDMounted,
 	setUIDActive,
-	setCurrentMountedComponentId
+	setCurrentMountedComponentId,
+	setCurrentMountedRoute
 } from '../../../core/scope/scope';
 import {
 	StatefullComponentFactoryType,
@@ -42,6 +43,8 @@ function renderComponent(componentFactory: StatefullComponentFactoryType | State
 		registry.set(uidMounted, app);
 		setUIDActive(uidMounted);
 
+		setCurrentMountedRoute([0]);
+
 		if (statelessComponentFactory.isStatelessComponent) {
 			vNode = statelessComponentFactory.createElement();
 		}
@@ -50,7 +53,6 @@ function renderComponent(componentFactory: StatefullComponentFactoryType | State
 			vNode = wire(statefullComponentFactory);
 		}
 
-
 		if (isNull(vNode)) {
 			vNode = createCommentNode(EMPTY_REPLACER);
 		}
@@ -58,6 +60,7 @@ function renderComponent(componentFactory: StatefullComponentFactoryType | State
 		vNode = defragment(vNode);
 		app.queue.push(() => makeEvents(vNode, uidMounted));
 		vNode = buildVirtualNodeWithRoutes(vNode);
+		vNode.route2 = [0];
 		app.vdom = vNode;
 
 		if (getIsFragment(vNode)) {
