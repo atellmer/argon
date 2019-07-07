@@ -17,7 +17,7 @@ import {
 	processDOM,
 	mount
 } from '../dom/dom';
-import { getVirtualDOM, buildVirtualNodeWithRoutes, VirtualNodeType, createCommentNode } from '../../../core/vdom/vdom';
+import { getVirtualDOM, VirtualNodeType, createCommentNode } from '../../../core/vdom/vdom';
 import { makeEvents } from '../events/events';
 import { defragment, getIsFragment } from '../../../core/fragment/fragment';
 import { isNull } from '../../../helpers';
@@ -59,8 +59,6 @@ function renderComponent(componentFactory: StatefullComponentFactoryType | State
 
 		vNode = defragment(vNode);
 		app.queue.push(() => makeEvents(vNode, uidMounted));
-		vNode = buildVirtualNodeWithRoutes(vNode);
-		vNode.route2 = [0];
 		app.vdom = vNode;
 
 		if (getIsFragment(vNode)) {

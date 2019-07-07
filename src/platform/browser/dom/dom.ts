@@ -8,7 +8,7 @@ import {
 	getComponentId,
 	isStatefullComponent,
 	isStatelessComponent,
-	isList
+	isRepeator
 } from '../../../core/component/component';
 import {
 	AppType,
@@ -18,7 +18,7 @@ import {
 	setCurrentMountedComponentId,
 	setUIDActive,
 	getCurrentMountedRoute,
-	setCurrentMountedRoute,
+	setCurrentMountedRoute
 } from '../../../core/scope/scope';
 import {
 	isObject,
@@ -48,6 +48,8 @@ import {
 	STATELESS_COMPONENT_REPLACER,
 	STATELESS_COMPONENT_LIST,
 	STATELESS_COMPONENT_LIST_REPLACER,
+	REPEATOR_REPLACER,
+	REPEATOR,
 	EVENT_HANDLER_REPLACER,
 	QUEUE_EVENTS,
 	EMPTY_REPLACER,
@@ -100,6 +102,7 @@ function transformTemplateStringToVirtualDOM(string: TemplateStringsArray, args:
 	const app = getRegistery().get(uid);
 	const elements: Array<ElementReplacerType<any>> = [];
 	const eventMap = new Map();
+	const currentRoute = getCurrentMountedRoute();
 	const mapArgsFn = (arg: any, argIdx: number) => {
 		let replacer = '';
 
@@ -123,9 +126,9 @@ function transformTemplateStringToVirtualDOM(string: TemplateStringsArray, args:
 		} else if (isArray(arg) && isVirtualNode(arg[0])) {
 			replacer = createCommentStr(NODE_LIST_REPLACER);
 			elements.push({ type: NODE_LIST, value: arg });
-		} else if (isList(arg)) {
-			replacer = createCommentStr('LIST_WRAPPER_REPLACER');
-			elements.push({ type: 'LIST_WRAPPER', value: arg });
+		} else if (isRepeator(arg)) {
+			replacer = createCommentStr(REPEATOR_REPLACER);
+			elements.push({ type: REPEATOR, value: arg });
 		} else if (isFunction(arg)) {
 			replacer = EVENT_HANDLER_REPLACER;
 			const findFactoryFn = (a: any) => isArray(a) ? isStatelessComponent(a[0]) : isStatelessComponent(a);
@@ -153,22 +156,16 @@ function transformTemplateStringToVirtualDOM(string: TemplateStringsArray, args:
 	elements.push({ type: QUEUE_EVENTS, value: eventMap });
 	sourceVNode = createVirtualDOMFromSource(markup);
 	sourceVNode = sourceVNode.length > 1 ? sourceVNode : sourceVNode[0];
-
-	const currentRoute = getCurrentMountedRoute();
-
-	if (!isArray(sourceVNode) && (sourceVNode as VirtualNodeType).type === 'TAG') {
-		const children = (sourceVNode as VirtualNodeType).children;
-
-		children.forEach((vNode, idx) => {
-			vNode.route2 = [...currentRoute, idx];
-		});
+	
+	if (isArray(sourceVNode)) {
+		const transitVNodeList = (sourceVNode as Array<VirtualNodeType>).map(transitVNode => buildVirtualNodeWithRoutes(transitVNode, currentRoute, currentRoute.length, 0, true));
+		vNode = mountVirtualDOMList(transitVNodeList, elements);
+	} else {
+		const transitVNode = sourceVNode as VirtualNodeType;
+		sourceVNode = buildVirtualNodeWithRoutes(transitVNode, currentRoute, currentRoute.length, 0, true);
+		//console.log('dom', deepClone(sourceVNode))
+		vNode = mountVirtualDOM(sourceVNode as VirtualNodeType, elements);
 	}
-
-	//console.log('dom', deepClone(sourceVNode))
-
-	vNode = isArray(sourceVNode)
-		? mountVirtualDOMList(sourceVNode as Array<VirtualNodeType>, elements)
-		: mountVirtualDOM(sourceVNode as VirtualNodeType, elements);
 
 	console.log('vNode', vNode)
 

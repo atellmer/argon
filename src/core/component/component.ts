@@ -104,9 +104,10 @@ type StatelessComponentFactoryType = {
 	};
 }
 
-type ListWrapperType = {
-	isList: boolean;
-	createList: () => Array<Array<VirtualNodeType> | VirtualNodeType>;
+type RepeatorType = {
+	isRepeator: boolean;
+	items: Array<any>;
+	createElement: (item: any, idx: number) => VirtualNodeType | Array<VirtualNodeType>;
 }
 
 type ComponentTreeType = HashMap<ComponentNodeType>;
@@ -342,7 +343,7 @@ function wire(componentFactory: StatefullComponentFactoryType): VirtualNodeType 
 	const uid = getUIDActive();
 	const app = getRegistery().get(uid);
 	const sanitizedProps = sanitize(componentFactory.props);
-	const { key, ref } = sanitizedProps;
+	const { key, ref } = sanitizedProps as any;
 	const instance: ComponentType = getPublicInstance(uid, key, componentFactory);
 	let componentTree = null;
 	let vNode: VirtualNodeType = null;
@@ -399,7 +400,7 @@ function wire(componentFactory: StatefullComponentFactoryType): VirtualNodeType 
 	app.queue.push(() => makeEvents(vNode, uid));
 
 	if (instance[$$root]) {
-		vNode = buildVirtualNodeWithRoutes(vNode);
+		//vNode = buildVirtualNodeWithRoutes(vNode);
 		app.queue.forEach(fn => fn());
 		app.queue = [];
 	}
@@ -499,10 +500,11 @@ function unmountComponent(id: string, uid: number, parentInstance = null) {
 	getRegistery().set(uid, app);
 }
 
-function list(fn: () => Array<Array<VirtualNodeType> | VirtualNodeType>) {
+function repeat(items, createElement: (item: string, idx: number) => VirtualNodeType | Array<VirtualNodeType>): RepeatorType {
 	return {
-		isList: true,
-		createList: fn
+		isRepeator: true,
+		items,
+		createElement
 	};
 }
 
@@ -516,8 +518,8 @@ function isStatelessComponent(o: StatelessComponentFactoryType) {
 }
 
 
-function isList(o: ListWrapperType) {
-	return isObject(o) && !isEmpty(o) && o.isList === true;
+function isRepeator(o: RepeatorType) {
+	return isObject(o) && !isEmpty(o) && o.isRepeator === true;
 }
 
 
@@ -526,6 +528,7 @@ export {
 	ComponentType,
 	StatefullComponentFactoryType,
 	StatelessComponentFactoryType,
+	RepeatorType,
 	ComponentTreeType,
 	ComponentNodeType,
 	createComponent,
@@ -536,6 +539,6 @@ export {
 	unmountComponent,
 	isStatefullComponent,
 	isStatelessComponent,
-	list,
-	isList
+	repeat,
+	isRepeator
 }

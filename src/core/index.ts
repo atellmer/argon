@@ -1,8 +1,8 @@
-import { createComponent, list } from './component';
+import { createComponent, repeat } from './component';
 import { fragment } from './fragment';
 
 export {
 	createComponent,
-	list,
+	repeat,
 	fragment
 }

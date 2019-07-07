@@ -4,6 +4,7 @@ import {
 	ComponentType,
 	StatefullComponentFactoryType,
 	StatelessComponentFactoryType,
+	RepeatorType,
 	ComponentTreeType,
 	ComponentNodeType,
 	createComponent,
@@ -14,7 +15,7 @@ import {
 	unmountComponent,
 	isStatefullComponent,
 	isStatelessComponent,
-	list
+	repeat
 } from './component';
 
 export {
@@ -22,6 +23,7 @@ export {
 	ComponentType,
 	StatefullComponentFactoryType,
 	StatelessComponentFactoryType,
+	RepeatorType,
 	ComponentTreeType,
 	ComponentNodeType,
 	createComponent,
@@ -32,5 +34,5 @@ export {
 	unmountComponent,
 	isStatefullComponent,
 	isStatelessComponent,
-	list
+	repeat
 }

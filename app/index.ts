@@ -1,9 +1,9 @@
 import * as Argon from '../src';
 
 
-const Item = Argon.createComponent(() => {
+const Item = Argon.createComponent(({ x }) => {
 	return Argon.dom`
-		<div>Item</div>
+		<div>Item: ${x}</div>
 	`
 });
 
@@ -11,26 +11,26 @@ const Item = Argon.createComponent(() => {
 const Header = Argon.createComponent(() => {
 	return Argon.dom`
 		<div>
-			${Argon.list(() => [1, 2, 3, 4, 5].map(x => Argon.dom`<div xxx="">item: ${x}</div>`))}
+			1
 		</div>
-	`
-});
-
-const Footer = Argon.createComponent(() => {
-	return Argon.dom`
+		`
+	});
+	
+	const Footer = Argon.createComponent(() => {
+		return Argon.dom`
 		<div>
-			Footer
+		Footer
 		</div>
-	`
-});
-
-const App = Argon.createComponent(() => {
-
-	return Argon.dom`
-		<div>
-			${Header()}
-			<div>App</div>
-			${Footer()}
+		`
+	});
+	
+	const App = Argon.createComponent(() => {
+		
+		return Argon.dom`
+			<div class="app">
+				<div>App</div>
+				${Argon.repeat([1, 2, 3], x => Item({x}))}
+				${Footer()}
 		</div>
 	`
 });
