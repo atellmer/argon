@@ -77,6 +77,7 @@ function renderComponent(componentFactory: StatefullComponentFactoryType | State
 
 		setUIDActive(uid);
 		setCurrentMountedComponentId(null);
+		setCurrentMountedRoute([0]);
 
 		if (statelessComponentFactory.isStatelessComponent) {
 			nextVNode = statelessComponentFactory.createElement();
@@ -91,7 +92,6 @@ function renderComponent(componentFactory: StatefullComponentFactoryType | State
 		}
 
 		vNode.route = [0];
-		nextVNode = defragment(nextVNode);
 		processDOM({ vNode, nextVNode, fragment: getIsFragment(nextVNode) });
 	} else {
 		setUIDMounted(uidMounted + 1);

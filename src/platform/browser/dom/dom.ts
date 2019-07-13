@@ -152,7 +152,7 @@ function transformTemplateStringToVirtualDOM(string: TemplateStringsArray, args:
 		vNode = mountVirtualDOM(sourceVNode as VirtualNodeType, elements);
 	}
 
-	console.log('vNode', vNode)
+	//console.log('vNode', vNode)
 
 	return vNode;
 }
@@ -346,12 +346,10 @@ function processDOM({ vNode = null, nextVNode = null, container = null, fragment
 	const uid = getUIDActive();
 	const app = getRegistery().get(uid);
 	const DOMElement = container || (fragment ? app.nativeElement : app.nativeElement.children[0]) as HTMLElement;
-	const prevRoute = [...vNode.route];
 	let diff = [];
 
 	app.queue.push(() => makeEvents(nextVNode, uid));
 	nextVNode = defragment(nextVNode);
-	nextVNode = buildVirtualNodeWithRoutes(nextVNode, prevRoute, prevRoute.length, 0, true);
 	diff = getVirtualDOMDiff(vNode, nextVNode);
 
 	console.log('[diff]', diff);

@@ -14,16 +14,41 @@ const Footer = Argon.createComponent(() => {
 		`;
 });
 
-const App = Argon.createComponent(() => {
+const App = Argon.createComponent(({ isOpen }) => {
+
   return Argon.dom`
 			<div class="app">
 				<div>App</div>
-				${Argon.repeat([1, 2, 3],x => Argon.dom`
-					<div key="${x}">${Item({x})}<div>
-				`)}
+				${isOpen && Argon.repeat([1, 2, 3],x => Item({x}))}
 				${Footer()}
 		</div>
 	`;
 });
 
-Argon.renderComponent(App({}), document.getElementById("app"));
+Argon.renderComponent(App({ isOpen: false }), document.getElementById("app"));
+
+setTimeout(() => {
+	Argon.renderComponent(App({ isOpen: true }), document.getElementById("app"));
+}, 1000)
+
+setTimeout(() => {
+	Argon.renderComponent(App({ isOpen: false }), document.getElementById("app"));
+}, 2000)
+
+setTimeout(() => {
+	Argon.renderComponent(App({ isOpen: true }), document.getElementById("app"));
+}, 3000)
+
+
+
+
+
+
+
+
+
+
+
+
+
+

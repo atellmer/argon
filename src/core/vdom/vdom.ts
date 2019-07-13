@@ -288,9 +288,6 @@ function getNodeKey(vNode: VirtualNodeType): string {
 function getVirtualDOMDiff(
   VDOM: VirtualNodeType,
   nextVDOM: VirtualNodeType,
-  includePortals: boolean = false,
-  onFragment: (diff: Array<VirtualDOMDiffType>, route: Array<number>, vNodeList: Array<VirtualNodeType>) => void = () => {},
-  targetNextVDOM: VirtualNodeType = null,
   prevDiff: Array<VirtualDOMDiffType> = [],
   prevRoute: Array<number> = [],
   level: number = 0,
@@ -301,46 +298,23 @@ function getVirtualDOMDiff(
 	const key = getNodeKey(VDOM);
 	const nextKey = getNodeKey(nextVDOM);
 
-  if (isEmpty(targetNextVDOM)) {
-    targetNextVDOM = { ...nextVDOM };
-  }
-
   route[level] = idx;
-
-  if (getAttribute(nextVDOM, ATTR_DONT_UPDATE_NODE)) {
-    removeAttribute(nextVDOM, ATTR_DONT_UPDATE_NODE);
-    return diff;
-  }
 
   if (!VDOM && !nextVDOM) return diff;
 
-  if (!includePortals &&
-    (Boolean(getAttribute(VDOM, ATTR_PORTAL_ID)) || Boolean(getAttribute(nextVDOM, ATTR_PORTAL_ID)))) {
-    return diff;
-  }
-
   if (!VDOM) {
-    if (/*getAttribute(nextVDOM, ATTR_FRAGMENT)*/false) {
-      onFragment(diff, route, nextVDOM.children);
-      diff = [];
-    } else {
-      diff.push(createDiffAction(VDOM_ACTIONS.ADD_NODE, route, null, nextVDOM));
-    }
+    diff.push(createDiffAction(VDOM_ACTIONS.ADD_NODE, route, null, nextVDOM));
     return diff;
-  } else if (!nextVDOM || (key !== nextKey)) {
+  } else if (!nextVDOM || (key && nextKey && key !== nextKey)) {
     diff.push(createDiffAction(VDOM_ACTIONS.REMOVE_NODE, route, VDOM, null));
     return diff;
   } else if (
     VDOM.type !== nextVDOM.type ||
     VDOM.name !== nextVDOM.name ||
-    VDOM.content !== nextVDOM.content
+    VDOM.content !== nextVDOM.content ||
+    key !== nextKey
   ) {
-    if (/*getAttribute(nextVDOM, ATTR_FRAGMENT)*/false) {
-      onFragment(diff, route, nextVDOM.children);
-      diff = [];
-    } else {
-      diff.push(createDiffAction(VDOM_ACTIONS.REPLACE_NODE, route, VDOM, nextVDOM));
-    }
+    diff.push(createDiffAction(VDOM_ACTIONS.REPLACE_NODE, route, VDOM, nextVDOM));
     return diff;
   } else {
     if (VDOM.attrs && nextVDOM.attrs) {
@@ -397,18 +371,10 @@ function getVirtualDOMDiff(
 
 				if (childVNode && childVNode.processed) continue;
 
-        if (getAttribute(childNextVNode, ATTR_DONT_UPDATE_NODE)) {
-          removeAttribute(nextVDOM, ATTR_DONT_UPDATE_NODE);
-          continue;
-        }
-
         diff = [
           ...getVirtualDOMDiff(
             childVNode,
             childNextVNode,
-            includePortals,
-            onFragment,
-            targetNextVDOM,
             diff,
             route,
             level,
@@ -417,7 +383,7 @@ function getVirtualDOMDiff(
 				];
 
 				childVNode && (childVNode.processed = true);
-
+        
 				if (key !== nextKey) {
 					VDOM.children.splice(i, 1);
 					iterateVDOM(VDOM, nextVDOM);
