@@ -38,16 +38,10 @@ import {
 	NODE_SEPARATOR,
 	NODE,
 	NODE_REPLACER,
-	NODE_LIST,
-	NODE_LIST_REPLACER,
 	STATEFULL_COMPONENT,
 	STATEFULL_COMPONENT_REPLACER,
-	STATEFULL_COMPONENT_LIST,
-	STATEFULL_COMPONENT_LIST_REPLACER,
 	STATELESS_COMPONENT,
 	STATELESS_COMPONENT_REPLACER,
-	STATELESS_COMPONENT_LIST,
-	STATELESS_COMPONENT_LIST_REPLACER,
 	REPEATOR_REPLACER,
 	REPEATOR,
 	EVENT_HANDLER_REPLACER,
@@ -110,22 +104,13 @@ function transformTemplateStringToVirtualDOM(string: TemplateStringsArray, args:
 			const componentFactory = arg as StatefullComponentFactoryType;
 			replacer = createCommentStr(STATEFULL_COMPONENT_REPLACER);
 			elements.push({ type: STATEFULL_COMPONENT, value: componentFactory });
-		} else if (isArray(arg) && isStatefullComponent(arg[0])) {
-			replacer = createCommentStr(STATEFULL_COMPONENT_LIST_REPLACER);
-			elements.push({ type: STATEFULL_COMPONENT_LIST, value: arg });
 		} else if (isStatelessComponent(arg)) {
 			const componentFactory = arg as StatelessComponentFactoryType;
 			replacer = createCommentStr(STATELESS_COMPONENT_REPLACER);
 			elements.push({ type: STATELESS_COMPONENT, value: componentFactory });
-		} else if (isArray(arg) && isStatelessComponent(arg[0])) {
-			replacer = createCommentStr(STATELESS_COMPONENT_LIST_REPLACER);
-			elements.push({ type: STATELESS_COMPONENT_LIST, value: arg });
-		} else if (isVirtualNode(arg)) {
+		}else if (isVirtualNode(arg)) {
 			replacer = createCommentStr(NODE_REPLACER);
 			elements.push({ type: NODE, value: arg });
-		} else if (isArray(arg) && isVirtualNode(arg[0])) {
-			replacer = createCommentStr(NODE_LIST_REPLACER);
-			elements.push({ type: NODE_LIST, value: arg });
 		} else if (isRepeator(arg)) {
 			replacer = createCommentStr(REPEATOR_REPLACER);
 			elements.push({ type: REPEATOR, value: arg });
@@ -176,11 +161,8 @@ function mountVirtualDOMList(vNode: Array<VirtualNodeType>, elements: Array<Elem
 	const vNodeList = vNode as  Array<VirtualNodeType>;
 	const replacers = [
 		NODE_REPLACER,
-		NODE_LIST_REPLACER,
 		STATELESS_COMPONENT_REPLACER,
-		STATELESS_COMPONENT_LIST_REPLACER,
-		STATEFULL_COMPONENT_REPLACER,
-		STATEFULL_COMPONENT_LIST_REPLACER
+		STATEFULL_COMPONENT_REPLACER
 	];
 	const transitList = [...vNodeList];
 	const mapVNodeFn = (vNode: VirtualNodeType) => {

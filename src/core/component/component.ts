@@ -107,7 +107,7 @@ type StatelessComponentFactoryType = {
 type RepeatorType = {
 	isRepeator: boolean;
 	items: Array<any>;
-	createElement: (item: any, idx: number) => VirtualNodeType | Array<VirtualNodeType>;
+	createElement: (item: any, idx: number) => VirtualNodeType | Array<VirtualNodeType> | StatelessComponentFactoryType | StatefullComponentFactoryType;
 }
 
 type ComponentTreeType = HashMap<ComponentNodeType>;
@@ -500,7 +500,7 @@ function unmountComponent(id: string, uid: number, parentInstance = null) {
 	getRegistery().set(uid, app);
 }
 
-function repeat(items, createElement: (item: string, idx: number) => VirtualNodeType | Array<VirtualNodeType>): RepeatorType {
+function repeat(items, createElement: (item: string, idx: number) => VirtualNodeType | Array<VirtualNodeType> | StatelessComponentFactoryType | StatefullComponentFactoryType): RepeatorType {
 	return {
 		isRepeator: true,
 		items,
@@ -508,15 +508,13 @@ function repeat(items, createElement: (item: string, idx: number) => VirtualNode
 	};
 }
 
-
-function isStatefullComponent(o: StatefullComponentFactoryType) {
+function isStatefullComponent(o: any) {
 	return isObject(o) && !isEmpty(o) && o.isStatefullComponent === true;
 }
 
-function isStatelessComponent(o: StatelessComponentFactoryType) {
+function isStatelessComponent(o: any) {
 	return isObject(o) && !isEmpty(o) && o.isStatelessComponent === true;
 }
-
 
 function isRepeator(o: RepeatorType) {
 	return isObject(o) && !isEmpty(o) && o.isRepeator === true;

@@ -16,11 +16,8 @@ export const $$ref = Symbol('argon.ref');
 
 export const NODE_SEPARATOR = '@argon:value';
 export const NODE_REPLACER = '@argon:node';
-export const NODE_LIST_REPLACER = '@argon:node-list';
 export const STATEFULL_COMPONENT_REPLACER = '@argon:statefull-component';
-export const STATEFULL_COMPONENT_LIST_REPLACER = '@argon:statefull-component-list';
 export const STATELESS_COMPONENT_REPLACER = '@argon:stateless-component';
-export const STATELESS_COMPONENT_LIST_REPLACER = '@argon:stateless-component-list';
 export const REPEATOR_REPLACER = '@argon:repeator';
 export const EVENT_HANDLER_REPLACER = '@argon:event';
 export const EMPTY_REPLACER = '@argon:empty';

@@ -1,7 +1,7 @@
 import { VirtualNodeType, getAttribute } from '../vdom/vdom';
 import { ATTR_FRAGMENT, VDOM_ELEMENT_TYPES } from '../constants/constants';
 import { isArray, isNull, isEmpty, isObject } from '../../helpers';
-import { VirtualNodeTagType, createVirtualNode } from '../vdom/vdom';
+import { VirtualNodeTagType, createVirtualNode, isVirtualNode } from '../vdom/vdom';
 
 
 function fragment(nestedContent: VirtualNodeType | Array<VirtualNodeType>) {
@@ -21,7 +21,7 @@ function defragment(vNode: VirtualNodeType): VirtualNodeType {
 	const mapChildrenFn = (vNode: VirtualNodeType) => vNode = defragment(vNode);
 	const mapTransitChildrenFn = (vNode: VirtualNodeType) => defragmented.push(...getIsFragment(vNode) ? vNode.children : [vNode]);
 
-	if (isNull(vNode)) return null;
+	if (isNull(vNode) || !isVirtualNode(vNode)) return null;
 
 	vNode.children.forEach(mapTransitChildrenFn);
 	defragmented.forEach(mapChildrenFn);

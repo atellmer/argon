@@ -3,18 +3,12 @@ import {
   $$id,
   STATEFULL_COMPONENT_REPLACER,
   STATEFULL_COMPONENT,
-  STATEFULL_COMPONENT_LIST,
-  STATEFULL_COMPONENT_LIST_REPLACER,
   STATELESS_COMPONENT_REPLACER,
   STATELESS_COMPONENT,
-  STATELESS_COMPONENT_LIST_REPLACER,
-  STATELESS_COMPONENT_LIST,
   REPEATOR_REPLACER,
   REPEATOR,
   NODE,
   NODE_REPLACER,
-  NODE_LIST,
-  NODE_LIST_REPLACER,
   ATTR_COMPONENT_ID,
 	ATTR_KEY,
 	ATTR_DONT_UPDATE_NODE,
@@ -37,7 +31,8 @@ import {
   ComponentType,
   getComponentId,
   getPublicInstance,
-  wire
+  wire,
+  isStatelessComponent
 } from '../component';
 
 
@@ -499,26 +494,7 @@ function mountVirtualDOM(
 			} else {
 				return nextVNode;
 			}
-    } else if (textContent === NODE_LIST_REPLACER) {
-      const findElementFn = (e: ElementReplacerType<Array<HTMLElement>>) => e.type === NODE_LIST;
-      const findVNodeFn = (vNode: VirtualNodeType) => vNode.type === VDOM_ELEMENT_TYPES.COMMENT && vNode.content === NODE_LIST_REPLACER;
-      const elementIdx = elements.findIndex(findElementFn);
-      const vNodeIdx = parentVNode && parentVNode.children.findIndex(findVNodeFn);
-			const nodeList = elements[elementIdx].value;
-      const mapNodesFn = (vNode: VirtualNodeType, idx: number) => {
-				parentVNode && parentVNode.children.splice(vNodeIdx + idx, 0, vNode);
-				return vNode;
-			};
-
-			elements.splice(elementIdx, 1);
-
-			if (parentVNode) {
-				parentVNode.children.splice(vNodeIdx, 1);
-				nodeList.forEach(mapNodesFn);
-			} else {
-				return nodeList.map(mapNodesFn);
-			}
-		} else if (textContent === REPEATOR_REPLACER) {
+    } else if (textContent === REPEATOR_REPLACER) {
 			const findElementFn = (e: ElementReplacerType<VirtualNodeType>) => e.type === REPEATOR;
       const findVNodeFn = (vNode: VirtualNodeType) => vNode.type === VDOM_ELEMENT_TYPES.COMMENT && vNode.content === REPEATOR_REPLACER;
 			const elementIdx = elements.findIndex(findElementFn);
@@ -531,12 +507,19 @@ function mountVirtualDOM(
 			const list = repeator.items.map((item, idx) => {
         const newRoute = [...slicedRoute, lastRouteIdx + idx];
         setCurrentMountedRoute(newRoute);
+        const element = repeator.createElement(item, idx);
+        
+        if (isStatelessComponent(element)) {
+          const componentFactory = element as StatelessComponentFactoryType;
+          const key = componentFactory.props[ATTR_KEY];
+          const vNode = componentFactory.createElement(); 
 
-        return repeator.createElement(item, idx) as VirtualNodeType;
-      });
+          !isEmpty(key) && setAttribute(vNode, ATTR_KEY, key);
+          return vNode;
+        }
 
-
-      console.log('list', list)
+        return element;
+      }) as Array<VirtualNodeType>;
 
 			list.forEach((vNode, idx) => vNode.route = [...slicedRoute, lastRouteIdx + idx]);
       elements.splice(elementIdx, 1);
@@ -548,97 +531,7 @@ function mountVirtualDOM(
         slicedVNodeListRight.forEach(vNode => vNode.route[vNode.route.length - 1] += repeator.items.length - 1);
         parentVNode.children = [...slicedVNodeListLeft, ...list, ...slicedVNodeListRight];
 			}
-		} else if (textContent === STATEFULL_COMPONENT_REPLACER) {
-      const findElementFn = (e: ElementReplacerType<StatefullComponentFactoryType>) =>  e.type === STATEFULL_COMPONENT;
-      const findVNodeFn = (n: VirtualNodeType) => n.type === VDOM_ELEMENT_TYPES.COMMENT && n.content === STATEFULL_COMPONENT_REPLACER;
-      const elementIdx = elements.findIndex(findElementFn);
-      const vNodeIdx = parentVNode ? parentVNode.children.findIndex(findVNodeFn) : 0;
-      const componentFactory = elements[elementIdx].value as StatefullComponentFactoryType;
-      const nextVNode = wire(componentFactory);
-
-      if (isFunction(componentFactory.mountPortal)) {
-        const id = getComponentId(nextVNode);
-        elements.splice(elementIdx, 1);
-        componentFactory.mountPortal(id, nextVNode);
-      } else if (parentVNode) {
-        elements.splice(elementIdx, 1);
-        parentVNode.children[vNodeIdx] = nextVNode;
-      } else {
-        elements.splice(elementIdx, 1);
-        mountedVNode = nextVNode;
-      }
-    } else if (textContent === STATEFULL_COMPONENT_LIST_REPLACER) {
-      const findElementFn = (e: ElementReplacerType<Array<StatefullComponentFactoryType>>) => e.type === STATEFULL_COMPONENT_LIST;
-      const findVNodeFn = (vNode: VirtualNodeType) => vNode.type === VDOM_ELEMENT_TYPES.COMMENT && vNode.content === STATEFULL_COMPONENT_LIST_REPLACER;
-      const id = getCurrentMountedComponentId();
-      const vdom = getVirtualDOM(uid);
-      const elementIdx = elements.findIndex(findElementFn);
-      const vNodeIdx = parentVNode.children.findIndex(findVNodeFn);
-      const componentFactoryList = elements[elementIdx].value;
-      const instance: ComponentType = componentFactoryList
-        ? getPublicInstance(
-            uid,
-            componentFactoryList[0].props.key,
-            componentFactoryList[0]
-          )
-        : null;
-      const parentPrevVNode = getRootParentVirtualNode(
-        instance[$$id],
-        getComponentVirtualNodeById(id, vdom)
-      );
-      const shift = parentVNode.children.length;
-      const filterNodesFn = (vNode: VirtualNodeType) => {
-        const hasSameKey = (componentFactory: StatefullComponentFactoryType) =>
-          componentFactory.props.key === getAttribute(vNode, ATTR_KEY);
-        return (
-          Boolean(getAttribute(vNode, ATTR_COMPONENT_ID)) &&
-          componentFactoryList.some(hasSameKey)
-        );
-      };
-      const children =
-        parentPrevVNode && parentPrevVNode.children
-          ? parentPrevVNode.children.filter(filterNodesFn)
-          : [];
-      const mapFactoryList = (
-        componentFactory: StatefullComponentFactoryType,
-        idx: number
-      ) => {
-        const runComponent = () => parentVNode.children.push(wire(componentFactory)); //TODO replace push
-
-        if (componentFactory.config.pure) {
-          const elementIdx = idx + shift;
-          const prevVNode = children[idx] || null;
-          const props = prevVNode ? prevVNode.props : null;
-          const nextProps = componentFactory.props;
-
-          if (Boolean(props)) {
-            const propNames = Array.from(Object.keys(props));
-            let isEquals = true;
-
-            for (const propName of propNames) {
-              if (props[propName] !== nextProps[propName]) {
-                isEquals = false;
-                break;
-              }
-            }
-
-            if (isEquals) {
-              parentVNode.children[elementIdx] = prevVNode;
-            } else {
-              runComponent();
-            }
-          } else {
-            runComponent();
-          }
-        } else {
-          runComponent();
-        }
-      };
-
-      elements.splice(elementIdx, 1);
-      componentFactoryList.forEach(mapFactoryList);
-      parentVNode.children.splice(vNodeIdx, 1);
-    } else if (textContent === STATELESS_COMPONENT_REPLACER) {
+		} else if (textContent === STATELESS_COMPONENT_REPLACER) {
 			const findElementFn = (e: ElementReplacerType<VirtualNodeType>) => e.type === STATELESS_COMPONENT;
       const findVNodeFn = (vNode: VirtualNodeType) => vNode.type === VDOM_ELEMENT_TYPES.COMMENT && vNode.content === STATELESS_COMPONENT_REPLACER;
 			const mapFns = (fn: Function) => fn();
@@ -660,35 +553,6 @@ function mountVirtualDOM(
 				parentVNode.children[vNodeIdx] = nextVNode;
 			} else {
 				return nextVNode;
-			}
-    } else if (textContent === STATELESS_COMPONENT_LIST_REPLACER) {
-      const findElementFn = (e: ElementReplacerType<Array<HTMLElement>>) => e.type === STATELESS_COMPONENT_LIST;
-			const findVNodeFn = (vNode: VirtualNodeType) => vNode.type === VDOM_ELEMENT_TYPES.COMMENT && vNode.content === STATELESS_COMPONENT_LIST_REPLACER;
-			const mapFns = (fn: Function) => fn();
-			const elementIdx = elements.findIndex(findElementFn);
-      const vNodeIdx = parentVNode && parentVNode.children.findIndex(findVNodeFn);
-      const factoryList = elements[elementIdx].value;
-      const queueEventsIdx = elements.findIndex(findQueueEventsFn);
-			const queueEvents = elements[queueEventsIdx].value.get(factoryList[0]) || [];
-			const mapFactoryFn = (componentFactory: StatelessComponentFactoryType, idx: number) => {
-				const createdVNode = componentFactory.createElement();
-				const key = componentFactory.props[ATTR_KEY];
-
-				!isEmpty(key) && setAttribute(createdVNode, ATTR_KEY, key);
-				parentVNode && parentVNode.children.splice(vNodeIdx + idx, 0, createdVNode);
-				return createdVNode;
-			};
-
-			elements.splice(elementIdx, 1);
-
-			if (parentVNode) {
-				parentVNode.children.splice(vNodeIdx, 1);
-				factoryList.forEach(mapFactoryFn);
-				queueEvents.forEach(mapFns);
-			} else {
-				const list = factoryList.map(mapFactoryFn);
-				queueEvents.forEach(mapFns);
-				return list;
 			}
     }
   }
