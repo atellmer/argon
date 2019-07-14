@@ -32,8 +32,12 @@ test(`[VDOM]: remove nodes by keys without excess actions`, (t) => {
 		{ action: REMOVE_NODE }
 	];
 
-	const result = getVirtualDOMDiff(vNode, nextVNode).map(x => ({ action: x.action }));
+	const diff = getVirtualDOMDiff(vNode, nextVNode);
+	const expectedKeys = [0, 2, 4];
+	const resultKeys = diff.map(x => +x.oldValue.attrs['key']);
+	const result = diff.map(x => ({ action: x.action }));
 
 	t.deepEqual(expected, result);
+	t.deepEqual(expectedKeys, resultKeys)
   t.end();
 });

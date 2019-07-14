@@ -305,7 +305,7 @@ function getVirtualDOMDiff(
   if (!VDOM) {
     diff.push(createDiffAction(VDOM_ACTIONS.ADD_NODE, route, null, nextVDOM));
     return diff;
-  } else if (!nextVDOM || (key && nextKey && key !== nextKey)) {
+  } else if (!nextVDOM || (!isEmpty(key) && !isEmpty(nextKey) && key !== nextKey)) {
     diff.push(createDiffAction(VDOM_ACTIONS.REMOVE_NODE, route, VDOM, null));
     return diff;
   } else if (
@@ -384,7 +384,7 @@ function getVirtualDOMDiff(
 
 				childVNode && (childVNode.processed = true);
         
-				if (key !== nextKey) {
+				if (!isEmpty(key) && !isEmpty(nextKey) && key !== nextKey) {
 					VDOM.children.splice(i, 1);
 					iterateVDOM(VDOM, nextVDOM);
 					break;
