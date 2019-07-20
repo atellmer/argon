@@ -17,6 +17,7 @@ export const $$ref = Symbol('argon.ref');
 export const NODE_SEPARATOR = '@argon:value';
 export const STATEFULL_COMPONENT_REPLACER = '@argon:statefull-component';
 export const STATELESS_COMPONENT_REPLACER = '@argon:stateless-component';
+export const LIST_REPLACER = '@argon:list';
 export const REPEAT_DIRECTIVE_REPLACER = '@argon:repeat-directive';
 export const INSERT_DIRECTIVE_REPLACER = '@argon:insert-directive';
 export const EVENT_HANDLER_REPLACER = '@argon:event';
@@ -25,6 +26,7 @@ export const PORTAL_REPLACER = '@argon:portal';
 
 export const STATEFULL_COMPONENT = 'STATEFULL_COMPONENT';
 export const STATELESS_COMPONENT = 'STATELESS_COMPONENT';
+export const LIST = 'LIST';
 export const REPEAT_DIRECTIVE = 'REPEAT_DIRECTIVE';
 export const INSERT_DIRECTIVE = 'INSERT_DIRECTIVE';
 export const QUEUE_EVENTS = 'QUEUE_EVENTS';

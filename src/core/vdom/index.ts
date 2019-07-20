@@ -17,7 +17,8 @@ import {
   removeAttribute,
   buildVirtualNodeWithRoutes,
   getComponentVirtualNodeById,
-  mountVirtualDOM
+  mountVirtualDOM,
+  transformTemplateStringToVirtualDOM,
 } from './vdom';
 
 export {
@@ -38,5 +39,6 @@ export {
   removeAttribute,
   buildVirtualNodeWithRoutes,
   getComponentVirtualNodeById,
-  mountVirtualDOM
+  mountVirtualDOM,
+  transformTemplateStringToVirtualDOM,
 }

@@ -1,12 +1,16 @@
 import { HashMap } from '../shared';
 import {
   $$id,
+  NODE_SEPARATOR,
   STATEFULL_COMPONENT_REPLACER,
   STATEFULL_COMPONENT,
   STATELESS_COMPONENT_REPLACER,
   STATELESS_COMPONENT,
+  LIST_REPLACER,
+  LIST, 
   REPEAT_DIRECTIVE_REPLACER,
   REPEAT_DIRECTIVE,
+  EVENT_HANDLER_REPLACER,
   ATTR_COMPONENT_ID,
   ATTR_KEY,
   ATTR_DONT_UPDATE_NODE,
@@ -18,8 +22,20 @@ import {
   INSERT_DIRECTIVE_REPLACER,
   INSERT_DIRECTIVE,
 } from '../constants';
-import { isEmpty, isFunction, deepClone, isNull } from '../../helpers';
-import { getUIDActive, getRegistery, getCurrentMountedComponentId, setCurrentMountedRoute } from '../scope';
+import {
+  isEmpty,
+  isFunction,
+  deepClone,
+  isNull,
+  isArray
+} from '../../helpers';
+import {
+  getUIDActive,
+  getRegistery,
+  getCurrentMountedComponentId,
+  getCurrentMountedRoute,
+  setCurrentMountedRoute
+} from '../scope';
 import {
   StatefullComponentFactoryType,
   StatelessComponentFactoryType,
@@ -28,8 +44,15 @@ import {
   getPublicInstance,
   wire,
   isStatelessComponent,
+  isStatefullComponent
 } from '../component/component';
-import { RepeatDirectiveType, InsertDirectiveType } from '../directives/directives';
+import {
+  RepeatDirectiveType,
+  InsertDirectiveType,
+  isInsertDirective,
+  isRepeatDirective
+} from '../directives/directives';
+import { dom } from '../../platform/browser/dom/dom';
 
 
 type VirtualNodeTagType = 'TAG' | 'TEXT' | 'COMMENT';
@@ -67,6 +90,7 @@ type ElementReplacerType<T> = {
   type:
       'STATEFULL_COMPONENT'
     | 'STATELESS_COMPONENT'
+    | 'LIST'
     | 'REPEAT_DIRECTIVE'
     | 'INSERT_DIRECTIVE'
     | 'QUEUE_EVENTS';
@@ -234,6 +258,116 @@ function createVirtualDOMFromSource(source: string): Array<VirtualNodeType> {
   }
 
   return result;
+}
+
+function createCommentStr(str: string): string {
+  return `<!--${str}-->`;
+}
+
+function transformTemplateStringToVirtualDOM(
+  string: TemplateStringsArray,
+  ...args: Array<any>
+): VirtualNodeType | Array<VirtualNodeType> {
+  const separator = NODE_SEPARATOR;
+  let markup = string.join(separator);
+  let sourceVNode: VirtualNodeType | Array<VirtualNodeType> = null;
+  let vNode: VirtualNodeType | Array<VirtualNodeType> = null;
+  const uid = getUIDActive();
+  const app = getRegistery().get(uid);
+  const elements: Array<ElementReplacerType<any>> = [];
+  const eventMap = new Map();
+  const currentRoute = getCurrentMountedRoute();
+  const mapArgsFn = (arg: any, argIdx: number) => {
+		let replacer = '';
+
+    if (isStatefullComponent(arg)) {
+      const componentFactory = arg as StatefullComponentFactoryType;
+      replacer = createCommentStr(STATEFULL_COMPONENT_REPLACER);
+      elements.push({ type: STATEFULL_COMPONENT, value: componentFactory });
+    } else if (isStatelessComponent(arg)) {
+      const componentFactory = arg as StatelessComponentFactoryType;
+      replacer = createCommentStr(STATELESS_COMPONENT_REPLACER);
+      elements.push({ type: STATELESS_COMPONENT, value: componentFactory });
+    } else if (isInsertDirective(arg)) {
+      replacer = createCommentStr(INSERT_DIRECTIVE_REPLACER);
+      elements.push({ type: INSERT_DIRECTIVE, value: arg });
+    } else if (isRepeatDirective(arg)) {
+      replacer = createCommentStr(REPEAT_DIRECTIVE_REPLACER);
+      elements.push({ type: REPEAT_DIRECTIVE, value: arg });
+		} else if (isArray(arg)) {
+			replacer = createCommentStr(LIST_REPLACER);
+			elements.push({ type: LIST, value: arg });
+		} else if (isFunction(arg)) {
+      replacer = EVENT_HANDLER_REPLACER;
+      const findFactoryFn = (a: any) => (isArray(a) ? isStatelessComponent(a[0]) : isStatelessComponent(a));
+      const slicedArgs = args.slice(0, argIdx).reverse();
+      const stateless = slicedArgs.find(findFactoryFn);
+
+      if (stateless) {
+        const fn = isArray(stateless) ? stateless[0] : stateless;
+        !eventMap.get(fn) && eventMap.set(fn, []);
+        eventMap.get(fn).push(() => app.eventHandlersCache.push(arg));
+      } else {
+        app.eventHandlersCache.push(arg);
+      }
+    } else if (isEmpty(arg) || arg === false) {
+      replacer = createCommentStr(EMPTY_REPLACER);
+    } else {
+      replacer = arg;
+    }
+
+    markup = markup.replace(separator, replacer);
+  };
+
+  args.forEach(mapArgsFn);
+
+  elements.push({ type: QUEUE_EVENTS, value: eventMap });
+  sourceVNode = createVirtualDOMFromSource(markup);
+  sourceVNode = sourceVNode.length > 1 ? sourceVNode : sourceVNode[0];
+
+  if (isArray(sourceVNode)) {
+		const transitVNodeList = (sourceVNode as Array<VirtualNodeType>)
+			.map(transitVNode => buildVirtualNodeWithRoutes(transitVNode, currentRoute, currentRoute.length, 0, true));
+    vNode = mountVirtualDOMList(transitVNodeList, elements);
+  } else {
+    const transitVNode = sourceVNode as VirtualNodeType;
+		sourceVNode = buildVirtualNodeWithRoutes(transitVNode, currentRoute, currentRoute.length, 0, true);
+    //console.log('dom', deepClone(sourceVNode));
+    vNode = mountVirtualDOM(sourceVNode as VirtualNodeType, elements);
+  }
+
+  //console.log('vNode', vNode);
+
+  return vNode;
+}
+
+function mountVirtualDOMList(
+  vNode: Array<VirtualNodeType>,
+  elements: Array<ElementReplacerType<any>>
+): Array<VirtualNodeType> {
+  const vNodeList = vNode as Array<VirtualNodeType>;
+  const replacers = [
+		INSERT_DIRECTIVE_REPLACER,
+		REPEAT_DIRECTIVE_REPLACER,
+		STATELESS_COMPONENT_REPLACER,
+		STATEFULL_COMPONENT_REPLACER
+	];
+  const transitList = [...vNodeList];
+  const mapVNodeFn = (vNode: VirtualNodeType) => {
+    if (vNode.type === VDOM_ELEMENT_TYPES.COMMENT && replacers.includes(vNode.content)) {
+      const findContentFn = (comparedVNode: VirtualNodeType) => comparedVNode.content === vNode.content;
+      const idx = transitList.findIndex(findContentFn);
+      const mountedVNode = mountVirtualDOM(vNode, elements);
+
+      transitList[idx] = mountedVNode;
+    }
+  };
+  const mapTransitVNodeFn = vNode => (vNode = mountVirtualDOM(vNode, elements));
+
+  vNodeList.forEach(mapVNodeFn);
+  transitList.forEach(mapTransitVNodeFn);
+
+  return transitList;
 }
 
 function getVirtualDOM(uid: number): VirtualNodeType {
@@ -498,6 +632,30 @@ function mountVirtualDOM(
         slicedVNodeListRight.forEach(vNode => (vNode.route[vNode.route.length - 1] += repeateDirective.items.length - 1));
         parentVNode.children = [...slicedVNodeListLeft, ...list, ...slicedVNodeListRight];
       }
+    } else if (textContent === LIST_REPLACER) {
+      const findElementFn = (e: ElementReplacerType<VirtualNodeType>) => e.type === LIST;
+      const findVNodeFn = (vNode: VirtualNodeType) =>
+        vNode.type === VDOM_ELEMENT_TYPES.COMMENT && vNode.content === LIST_REPLACER;
+      const elementIdx = elements.findIndex(findElementFn);
+      const vNodeIdx = parentVNode && parentVNode.children.findIndex(findVNodeFn);
+      const list = elements[elementIdx].value;
+      const lastRouteIdx = mountedVNode.route[mountedVNode.route.length - 1];
+      const slicedRoute = mountedVNode.route.slice(0, -1);
+      const vNodeList = list.map((v, idx) => {
+        const newRoute = [...slicedRoute, lastRouteIdx + idx];
+        setCurrentMountedRoute(newRoute);
+        return transformTemplateStringToVirtualDOM`${v}`;
+      });
+
+      elements.splice(elementIdx, 1);
+
+      if (parentVNode) {
+        const slicedVNodeListLeft = parentVNode.children.slice(0, vNodeIdx);
+        const slicedVNodeListRight = parentVNode.children.slice(vNodeIdx + 1);
+
+        slicedVNodeListRight.forEach(vNode => (vNode.route[vNode.route.length - 1] += list.length - 1));
+        parentVNode.children = [...slicedVNodeListLeft, ...vNodeList, ...slicedVNodeListRight];
+      } 
     } else if (textContent === STATELESS_COMPONENT_REPLACER) {
       const findElementFn = (e: ElementReplacerType<VirtualNodeType>) => e.type === STATELESS_COMPONENT;
       const findVNodeFn = (vNode: VirtualNodeType) =>
@@ -599,4 +757,5 @@ export {
   getComponentVirtualNodeById,
   mountVirtualDOM,
   isTagVirtualNode,
-};
+  transformTemplateStringToVirtualDOM,
+}
