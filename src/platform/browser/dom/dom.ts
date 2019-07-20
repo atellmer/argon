@@ -352,7 +352,7 @@ function processDOM({ vNode = null, nextVNode = null, container = null, fragment
 	nextVNode = defragment(nextVNode);
 	diff = getVirtualDOMDiff(vNode, nextVNode);
 
-	console.log('[diff]', diff);
+	//console.log('[diff]', diff);
 
 	patchDOM(diff, DOMElement, uid);
 	app.queue.forEach(fn => fn());

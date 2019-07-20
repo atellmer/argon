@@ -14,8 +14,7 @@
     "build:prod": "webpack --config webpack.build.config --env.production",
     "test": "npx ts-node-dev --transpileOnly ./node_modules/tape/bin/tape ./src/**/*.spec.ts | tap-notify | tap-difflet",
     "test:watch": "npx ts-node-dev --respawn --transpileOnly ./node_modules/tape/bin/tape ./src/**/*.spec.ts | tap-difflet",
-    "precommit": "npm test",
-    "prepush": "npm test"
+    "precommit": "npm test"
   },
   "keywords": [],
   "devDependencies": {

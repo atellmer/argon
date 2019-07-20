@@ -33,7 +33,7 @@ import {
   getPublicInstance,
   wire,
   isStatelessComponent
-} from '../component';
+} from '../component/component';
 
 
 type VirtualNodeTagType = 'TAG' | 'TEXT' | 'COMMENT';
