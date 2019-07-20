@@ -11,6 +11,36 @@ import { renderComponent } from '../render';
 
 jsdom();
 
+test(`[DOM]: `, t => {
+  const DOMElement = document.createElement('div');
+  const DOMElementPortal = document.createElement('div');
+
+  t.doesNotThrow(() => {
+    const InternalRender = createComponent(({ text }) => dom`<div>${text}</div>`);
+
+    const App = createComponent(({ isOpen }) => {
+      renderComponent(
+        InternalRender({ text: isOpen ? 'on' : 'off' }),
+        DOMElementPortal
+      );
+
+      return dom`
+        <div class="app">
+          <div>App</div>
+        </div>`;
+    });
+
+    renderComponent(App({ isOpen: false }), DOMElement);
+    renderComponent(App({ isOpen: true }), DOMElement);
+
+    const expected = transformMarkup(`<div>on</div>`);
+    const result = transformMarkup(html(DOMElementPortal));
+
+    t.equal(expected, result, 'correct render');
+    t.end();
+  });
+});
+
 /*
 test(`[DOM]: render dom correctly`, (t) => {
 	const Component = createComponent({

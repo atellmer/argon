@@ -22,15 +22,17 @@ import { defragment, getIsFragment } from '../../../core/fragment/fragment';
 import { isNull } from '../../../helpers';
 
 
+const zoneIdByRootNodeMap = new WeakMap();
 let renderInProcess = false;
 let isInternalRenderCall = false;
 let zoneCount = 0;
-const zoneIdByRootNodeMap = new WeakMap();
 
 function renderComponent(componentFactory: StatefullComponentFactoryType | StatelessComponentFactoryType, container: HTMLElement) {
 	const isMounted = typeof zoneIdByRootNodeMap.get(container) !== 'undefined';
 	const statelessComponentFactory = componentFactory as StatelessComponentFactoryType;
 	const statefullComponentFactory = componentFactory as StatefullComponentFactoryType;
+	const prevZoneId = getUIDActive();
+	let zoneId = 0;
 
 	if (!renderInProcess) {
 		renderInProcess = true;
@@ -43,8 +45,7 @@ function renderComponent(componentFactory: StatefullComponentFactoryType | State
 		zoneCount++;
 	}
 
-	const prevZoneId = getUIDActive();
-	const zoneId = zoneIdByRootNodeMap.get(container);
+	zoneId = zoneIdByRootNodeMap.get(container);
 
 	setCurrentMountedRoute([0]);
 	setCurrentMountedComponentId(null);
@@ -54,8 +55,8 @@ function renderComponent(componentFactory: StatefullComponentFactoryType | State
 		let vNode: VirtualNodeType = null;
 		const registry = getRegistery();
 		const app = createApp(container);
-		container.innerHTML = '';
 
+		container.innerHTML = '';
 		registry.set(zoneId, app);
 
 		if (statelessComponentFactory.isStatelessComponent) {

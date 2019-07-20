@@ -262,8 +262,8 @@ function getDOMElementRoute(sourceDOMElement: HTMLElement, targetDOMElement: HTM
 }
 
 
-function getNodeByDiffElement($parentNode: HTMLElement, diffElement: VirtualDOMDiffType) {
-	let node = $parentNode;
+function getNodeByDiffElement(parentNode: HTMLElement, diffElement: VirtualDOMDiffType) {
+	let node = parentNode;
 	const { action, route, oldValue, nextValue } = diffElement;
 	const isRoot = route.length === 1;
 
@@ -363,6 +363,7 @@ function processDOM({ vNode = null, nextVNode = null, container = null, fragment
 	const getDOMElement = () => {
 		if (container) return container;
 		if(fragment) return app.nativeElement;
+
 		const isVNodeTag = isTagVirtualNode(vNode);
 		const isNextVNodeTag = isTagVirtualNode(nextVNode);
 
@@ -375,13 +376,12 @@ function processDOM({ vNode = null, nextVNode = null, container = null, fragment
 	const DOMElement = getDOMElement();
 	let diff = [];
 
-	console.log('DOMElement: ', DOMElement)
-
 	app.queue.push(() => makeEvents(nextVNode, uid));
 	nextVNode = defragment(nextVNode);
 	diff = getVirtualDOMDiff(vNode, nextVNode);
 
 	patchDOM(diff, DOMElement, uid);
+
 	app.queue.forEach(fn => fn());
 	app.queue = [];
 	app.vdom = nextVNode;
