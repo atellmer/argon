@@ -10,20 +10,11 @@ const Item = Argon.createComponent(({x}) => {
 
 const App = Argon.createComponent(({ isOpen }) => {
 
-	if (!isOpen) return null;
-
   return Argon.dom`some text`;
 });
 
-Argon.renderComponent(App({ isOpen: false }), document.getElementById('app'));
+Argon.renderComponent(App({ isOpen: true }), document.getElementById('app'));
 
-setTimeout(() => {
-	Argon.renderComponent(App({ isOpen: true }), document.getElementById('app'));
-}, 1000)
-
-setTimeout(() => {
-	Argon.renderComponent(App({ isOpen: false }), document.getElementById('app'));
-}, 2000)
 
 
 
