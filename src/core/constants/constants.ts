@@ -15,21 +15,18 @@ export const $$portal = Symbol('argon.portal');
 export const $$ref = Symbol('argon.ref');
 
 export const NODE_SEPARATOR = '@argon:value';
-export const NODE_REPLACER = '@argon:node';
 export const STATEFULL_COMPONENT_REPLACER = '@argon:statefull-component';
 export const STATELESS_COMPONENT_REPLACER = '@argon:stateless-component';
-export const REPEATOR_REPLACER = '@argon:repeator';
+export const REPEAT_DIRECTIVE_REPLACER = '@argon:repeat-directive';
+export const INSERT_DIRECTIVE_REPLACER = '@argon:insert-directive';
 export const EVENT_HANDLER_REPLACER = '@argon:event';
 export const EMPTY_REPLACER = '@argon:empty';
 export const PORTAL_REPLACER = '@argon:portal';
 
-export const NODE = 'NODE';
-export const NODE_LIST = 'NODE_LIST';
 export const STATEFULL_COMPONENT = 'STATEFULL_COMPONENT';
-export const STATEFULL_COMPONENT_LIST = 'STATEFULL_COMPONENT_LIST';
 export const STATELESS_COMPONENT = 'STATELESS_COMPONENT';
-export const STATELESS_COMPONENT_LIST = 'STATELESS_COMPONENT_LIST';
-export const REPEATOR = 'REPEATOR';
+export const REPEAT_DIRECTIVE = 'REPEAT_DIRECTIVE';
+export const INSERT_DIRECTIVE = 'INSERT_DIRECTIVE';
 export const QUEUE_EVENTS = 'QUEUE_EVENTS';
 
 export const ATTR_ROOT_APP = 'data-argonroot';

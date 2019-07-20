@@ -4,12 +4,9 @@ import { VirtualNodeType } from '../vdom';
 
 type ScopeType = {
 	registery: Map<number, AppType>;
-	uid: {
-		mounted: number;
-		active: number;
-	},
-	currentMountedComponentId: string | null;
+	uid: number;
 	currentMountedRoute: Array<number>;
+	currentMountedComponentId: string | null;
 }
 
 type AppType = {
@@ -28,22 +25,17 @@ type AppType = {
 let scope = createScope();
 const getRegistery = () => scope.registery;
 const setRegistery = (registery: Map<number, any>) => scope.registery = registery;
-const getUIDMounted = (): number => scope.uid.mounted;
-const setUIDMounted = (uid: number) => scope.uid.mounted = uid;
-const getUIDActive = (): number => scope.uid.active;
-const setUIDActive = (uid: number) => scope.uid.active = uid;
-const getCurrentMountedComponentId = (): string | null => scope.currentMountedComponentId;
-const setCurrentMountedComponentId = (id: string | null) => scope.currentMountedComponentId = id;
+const getUIDActive = (): number => scope.uid;
+const setUIDActive = (uid: number) => scope.uid = uid;
 const getCurrentMountedRoute = (): Array<number> => [...scope.currentMountedRoute];
 const setCurrentMountedRoute = (route: Array<number>) => scope.currentMountedRoute = [...route];
+const getCurrentMountedComponentId = (): string | null => scope.currentMountedComponentId;
+const setCurrentMountedComponentId = (id: string | null) => scope.currentMountedComponentId = id;
 
 function createScope(): ScopeType {
 	return {
 		registery: new Map(),
-		uid: {
-			mounted: 0,
-			active: 0
-		},
+		uid: 0,
 		currentMountedComponentId: null,
 		currentMountedRoute: []
 	};
@@ -66,14 +58,12 @@ export {
 	AppType,
 	getRegistery,
 	setRegistery,
-	getUIDMounted,
-	setUIDMounted,
 	getUIDActive,
 	setUIDActive,
-	getCurrentMountedComponentId,
-	setCurrentMountedComponentId,
 	getCurrentMountedRoute,
 	setCurrentMountedRoute,
+	getCurrentMountedComponentId,
+	setCurrentMountedComponentId,
 	createScope,
-	createApp
+	createApp,
 }

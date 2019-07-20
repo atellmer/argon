@@ -1,7 +1,8 @@
 import {
 	createComponent,
+	fragment,
 	repeat,
-	fragment
+	insert,
 } from './core';
 import {
 	renderComponent,
@@ -12,6 +13,7 @@ import {
 export {
 	createComponent,
 	repeat,
+	insert,
 	renderComponent,
 	dom,
 	fragment

@@ -19,7 +19,7 @@ import {
 import { getVirtualDOM, VirtualNodeType, createCommentNode } from '../../../core/vdom/vdom';
 import { makeEvents } from '../events/events';
 import { defragment, getIsFragment } from '../../../core/fragment/fragment';
-import { isNull } from '../../../helpers';
+import { isNull, isUndefined } from '../../../helpers';
 
 
 const zoneIdByRootNodeMap = new WeakMap();
@@ -28,7 +28,7 @@ let isInternalRenderCall = false;
 let zoneCount = 0;
 
 function renderComponent(componentFactory: StatefullComponentFactoryType | StatelessComponentFactoryType, container: HTMLElement) {
-	const isMounted = typeof zoneIdByRootNodeMap.get(container) !== 'undefined';
+	const isMounted = !isUndefined(zoneIdByRootNodeMap.get(container));
 	const statelessComponentFactory = componentFactory as StatelessComponentFactoryType;
 	const statefullComponentFactory = componentFactory as StatefullComponentFactoryType;
 	const prevZoneId = getUIDActive();
