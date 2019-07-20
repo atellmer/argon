@@ -52,7 +52,6 @@ import {
   isInsertDirective,
   isRepeatDirective
 } from '../directives/directives';
-import { dom } from '../../platform/browser/dom/dom';
 
 
 type VirtualNodeTagType = 'TAG' | 'TEXT' | 'COMMENT';
