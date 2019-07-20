@@ -566,6 +566,10 @@ function getComponentVirtualNodeById(id: string,vNode: VirtualNodeType): Virtual
   return null;
 }
 
+function isTagVirtualNode(vNode: VirtualNodeType): boolean {
+  return vNode.type === 'TAG';
+}
+
 
 export {
   VirtualNodeTagType,
@@ -586,5 +590,6 @@ export {
   removeAttribute,
   buildVirtualNodeWithRoutes,
   getComponentVirtualNodeById,
-  mountVirtualDOM
+  mountVirtualDOM,
+  isTagVirtualNode
 }

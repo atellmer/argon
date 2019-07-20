@@ -51,10 +51,10 @@ function renderComponent(componentFactory: StatefullComponentFactoryType | State
 	setUIDActive(zoneId);
 	
 	if (!isMounted) {
-		container.innerHTML = '';
 		let vNode: VirtualNodeType = null;
 		const registry = getRegistery();
 		const app = createApp(container);
+		container.innerHTML = '';
 
 		registry.set(zoneId, app);
 
@@ -62,8 +62,11 @@ function renderComponent(componentFactory: StatefullComponentFactoryType | State
 			vNode = statelessComponentFactory.createElement();
 		} else if (statefullComponentFactory.isStatefullComponent) {
 			vNode = wire(statefullComponentFactory);
-		} else if (isNull(vNode)) {
+		}
+		
+		if (isNull(vNode)) {
 			vNode = createCommentNode(EMPTY_REPLACER);
+			vNode.route = [0];
 		}
 
 		vNode = defragment(vNode);
@@ -81,14 +84,17 @@ function renderComponent(componentFactory: StatefullComponentFactoryType | State
 		app.queue = [];
 	} else {
 		const vNode = getVirtualDOM(zoneId);
-		let nextVNode = null;
+		let nextVNode: VirtualNodeType = null;
 
 		if (statelessComponentFactory.isStatelessComponent) {
 			nextVNode = statelessComponentFactory.createElement();
 		} else if (statefullComponentFactory.isStatefullComponent) {
 			nextVNode = wire(statefullComponentFactory);
-		} else if (isNull(nextVNode)) {
+		} 
+		
+		if (isNull(nextVNode)) {
 			nextVNode = createCommentNode(EMPTY_REPLACER);
+			nextVNode.route = [0];
 		}
 
 		processDOM({ vNode, nextVNode, fragment: getIsFragment(nextVNode) });

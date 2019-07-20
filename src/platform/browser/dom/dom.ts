@@ -70,7 +70,8 @@ import {
 	getVirtualDOMDiff,
 	isVirtualNode,
 	getAttribute,
-	removeAttribute
+	removeAttribute,
+	isTagVirtualNode
 } from '../../../core/vdom/vdom';
 import { makeEvents } from '../events/events';
 import { defragment } from '../../../core/fragment/fragment';
@@ -261,24 +262,38 @@ function getDOMElementRoute(sourceDOMElement: HTMLElement, targetDOMElement: HTM
 }
 
 
-function getNodeByRoute($parentNode: HTMLElement, action: VirtualDOMActionsType, route: Array<number> = []) {
-	let $node = $parentNode;
-	const mapRoute = (cIdx: number, idx: number, arr: Array<number>) => {
+function getNodeByDiffElement($parentNode: HTMLElement, diffElement: VirtualDOMDiffType) {
+	let node = $parentNode;
+	const { action, route, oldValue, nextValue } = diffElement;
+	const isRoot = route.length === 1;
+
+	if (isRoot) {
+		const isVNodeTag = isTagVirtualNode(oldValue as VirtualNodeType);
+		const isNextVNodeTag = isTagVirtualNode(nextValue as VirtualNodeType);
+		
+		if ((!isVNodeTag && isNextVNodeTag) || (!isVNodeTag && !isNextVNodeTag)) {
+			node = node.childNodes[0] as HTMLElement;
+		}
+
+		return node;
+	}
+
+	const mapRoute = (routeId: number, idx: number, arr: Array<number>) => {
 		if (idx > 0) {
 			if ((action === VDOM_ACTIONS.ADD_NODE) && idx === arr.length - 1) return;
 
 			if (action === VDOM_ACTIONS.REMOVE_NODE) {
-				$node = ($node.childNodes[cIdx] || $node.childNodes[$node.childNodes.length - 1]) as HTMLElement;
+				node = (node.childNodes[routeId] || node.childNodes[node.childNodes.length - 1]) as HTMLElement;
 				return;
 			}
 
-			$node = $node.childNodes[cIdx] as HTMLElement;
+			node = node.childNodes[routeId] as HTMLElement;
 		}
 	};
 
 	route.forEach(mapRoute);
 
-	return $node;
+	return node;
 }
 
 function getDOMElementByRoute(parentNode: HTMLElement, route: Array<number> = []): HTMLElement {
@@ -296,8 +311,7 @@ function getDOMElementByRoute(parentNode: HTMLElement, route: Array<number> = []
 
 function patchDOM(diff: Array<VirtualDOMDiffType>, $node: HTMLElement, uid: number) {
 	const mapDiff = (diffElement: VirtualDOMDiffType) => {
-
-		const node = getNodeByRoute($node, diffElement.action, diffElement.route);
+		const node = getNodeByDiffElement($node, diffElement);
 
 		if (diffElement.action === VDOM_ACTIONS.ADD_NODE) {
 			const newNode = mount(diffElement.nextValue as VirtualNodeType);
@@ -345,14 +359,27 @@ function patchDOM(diff: Array<VirtualDOMDiffType>, $node: HTMLElement, uid: numb
 function processDOM({ vNode = null, nextVNode = null, container = null, fragment = false }: ProcessDOMOptionsType) {
 	const uid = getUIDActive();
 	const app = getRegistery().get(uid);
-	const DOMElement = container || (fragment ? app.nativeElement : app.nativeElement.children[0]) as HTMLElement;
+	const isRoot = nextVNode.route.length === 1;
+	const getDOMElement = () => {
+		if (container) return container;
+		if(fragment) return app.nativeElement;
+		const isVNodeTag = isTagVirtualNode(vNode);
+		const isNextVNodeTag = isTagVirtualNode(nextVNode);
+
+		if (isRoot && ((!isVNodeTag && isNextVNodeTag) || (!isVNodeTag && !isNextVNodeTag))) {
+			return app.nativeElement;
+		}
+
+		return app.nativeElement.children[0] as HTMLElement;
+	};
+	const DOMElement = getDOMElement();
 	let diff = [];
+
+	console.log('DOMElement: ', DOMElement)
 
 	app.queue.push(() => makeEvents(nextVNode, uid));
 	nextVNode = defragment(nextVNode);
 	diff = getVirtualDOMDiff(vNode, nextVNode);
-
-	//console.log('[diff]', diff);
 
 	patchDOM(diff, DOMElement, uid);
 	app.queue.forEach(fn => fn());
