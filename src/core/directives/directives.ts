@@ -1,5 +1,5 @@
 import {
-	VirtualNodeType
+	VirtualNodeType,
 } from '../vdom';
 import {
   StatelessComponentFactoryType,
