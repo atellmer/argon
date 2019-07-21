@@ -19,7 +19,7 @@ type InsertDirectiveType = {
 	createElement: () => VirtualNodeType | Array<VirtualNodeType> | StatelessComponentFactoryType | StatefullComponentFactoryType;
 }
 
-function repeat(items, createElement: (item: string, idx: number) => VirtualNodeType | Array<VirtualNodeType> | StatelessComponentFactoryType | StatefullComponentFactoryType): RepeatDirectiveType {
+function repeat(items, createElement: (item: any, idx: number) => VirtualNodeType | Array<VirtualNodeType> | StatelessComponentFactoryType | StatefullComponentFactoryType): RepeatDirectiveType {
 	return {
 		isRepeatDirective: true,
 		items,
