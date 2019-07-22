@@ -44,7 +44,7 @@ function escapeTags(str: string) {
 		'>': '\u02c3',
 		'/': '\u002f',
 		'&': '\u0026',
-		'"': '\u02ba',
+		//'"': '\u02ba',
 		'\'': '\u02b9',
 	};
 

@@ -1,25 +1,17 @@
+import { StatefullComponentFactoryType, StatelessComponentFactoryType, wire } from '../../../core/component/component';
 import { EMPTY_REPLACER } from '../../../core/constants/constants';
 import {
-	createApp,
-	getRegistery,
-	getUIDActive,
-	setUIDActive,
-	setCurrentMountedComponentId,
-	setCurrentMountedRoute
+  createApp,
+  getRegistery,
+  getUIDActive,
+  setCurrentMountedComponentId,
+  setCurrentMountedRoute,
+  setUIDActive,
 } from '../../../core/scope/scope';
-import {
-	StatefullComponentFactoryType,
-	StatelessComponentFactoryType,
-	wire
-} from '../../../core/component/component';
-import {
-	processDOM,
-	mount
-} from '../dom/dom';
-import { getVirtualDOM, VirtualNodeType, createCommentNode } from '../../../core/vdom/vdom';
-import { makeEvents } from '../events/events';
-import { defragment, getIsFragment } from '../../../core/fragment/fragment';
+import { createCommentNode, getVirtualDOM, VirtualNodeType } from '../../../core/vdom/vdom';
 import { isNull, isUndefined } from '../../../helpers';
+import { mount, processDOM } from '../dom/dom';
+import { makeEvents } from '../events/events';
 
 
 const zoneIdByRootNodeMap = new WeakMap();
@@ -27,88 +19,81 @@ let renderInProcess = false;
 let isInternalRenderCall = false;
 let zoneCount = 0;
 
-function renderComponent(componentFactory: StatefullComponentFactoryType | StatelessComponentFactoryType, container: HTMLElement) {
-	const isMounted = !isUndefined(zoneIdByRootNodeMap.get(container));
-	const statelessComponentFactory = componentFactory as StatelessComponentFactoryType;
-	const statefullComponentFactory = componentFactory as StatefullComponentFactoryType;
-	const prevZoneId = getUIDActive();
-	let zoneId = 0;
+function renderComponent(
+  componentFactory: StatefullComponentFactoryType | StatelessComponentFactoryType,
+  container: HTMLElement,
+) {
+  const isMounted = !isUndefined(zoneIdByRootNodeMap.get(container));
+  const statelessComponentFactory = componentFactory as StatelessComponentFactoryType;
+  const statefullComponentFactory = componentFactory as StatefullComponentFactoryType;
+  const prevZoneId = getUIDActive();
+  let zoneId = 0;
 
-	if (!renderInProcess) {
-		renderInProcess = true;
-	} else {
-		isInternalRenderCall = true;
-	}
-	
-	if (!isMounted) {
-		zoneIdByRootNodeMap.set(container, zoneCount);
-		zoneCount++;
-	}
+  if (!renderInProcess) {
+    renderInProcess = true;
+  } else {
+    isInternalRenderCall = true;
+  }
 
-	zoneId = zoneIdByRootNodeMap.get(container);
+  if (!isMounted) {
+    zoneIdByRootNodeMap.set(container, zoneCount);
+    zoneCount++;
+  }
 
-	setCurrentMountedRoute([0]);
-	setCurrentMountedComponentId(null);
-	setUIDActive(zoneId);
-	
-	if (!isMounted) {
-		let vNode: VirtualNodeType = null;
-		const registry = getRegistery();
-		const app = createApp(container);
+  zoneId = zoneIdByRootNodeMap.get(container);
 
-		container.innerHTML = '';
-		registry.set(zoneId, app);
+  setCurrentMountedRoute([0]);
+  setCurrentMountedComponentId(null);
+  setUIDActive(zoneId);
 
-		if (statelessComponentFactory.isStatelessComponent) {
-			vNode = statelessComponentFactory.createElement();
-		} else if (statefullComponentFactory.isStatefullComponent) {
-			vNode = wire(statefullComponentFactory);
-		}
-		
-		if (isNull(vNode)) {
-			vNode = createCommentNode(EMPTY_REPLACER);
-			vNode.route = [0];
-		}
+  if (!isMounted) {
+    let vNode: VirtualNodeType = null;
+    const registry = getRegistery();
+    const app = createApp(container);
 
-		vNode = defragment(vNode);
-		app.queue.push(() => makeEvents(vNode, zoneId));
-		app.vdom = vNode;
+    container.innerHTML = '';
+    registry.set(zoneId, app);
 
-		if (getIsFragment(vNode)) {
-			const mountNodesFn = (vNode: VirtualNodeType) => container.appendChild(mount(vNode));
-			vNode.children.forEach(mountNodesFn);
-		} else {
-			container.appendChild(mount(vNode));
-		}
+    if (statelessComponentFactory.isStatelessComponent) {
+      vNode = statelessComponentFactory.createElement();
+    } else if (statefullComponentFactory.isStatefullComponent) {
+      vNode = wire(statefullComponentFactory);
+    }
 
-		app.queue.forEach(fn => fn());
-		app.queue = [];
-	} else {
-		const vNode = getVirtualDOM(zoneId);
-		let nextVNode: VirtualNodeType = null;
+    if (isNull(vNode)) {
+      vNode = createCommentNode(EMPTY_REPLACER);
+      vNode.route = [0];
+    }
 
-		if (statelessComponentFactory.isStatelessComponent) {
-			nextVNode = statelessComponentFactory.createElement();
-		} else if (statefullComponentFactory.isStatefullComponent) {
-			nextVNode = wire(statefullComponentFactory);
-		} 
-		
-		if (isNull(nextVNode)) {
-			nextVNode = createCommentNode(EMPTY_REPLACER);
-			nextVNode.route = [0];
-		}
+    app.queue.push(() => makeEvents(vNode, zoneId));
+    app.vdom = vNode;
+    container.appendChild(mount(vNode));
+    app.queue.forEach(fn => fn());
+    app.queue = [];
+  } else {
+    const vNode = getVirtualDOM(zoneId);
+    let nextVNode: VirtualNodeType = null;
 
-		processDOM({ vNode, nextVNode, fragment: getIsFragment(nextVNode) });
-	}
+    if (statelessComponentFactory.isStatelessComponent) {
+      nextVNode = statelessComponentFactory.createElement();
+    } else if (statefullComponentFactory.isStatefullComponent) {
+      nextVNode = wire(statefullComponentFactory);
+    }
 
-	if (!isInternalRenderCall) {
-		renderInProcess = false;
-	} else {
-		isInternalRenderCall = false;
-		setUIDActive(prevZoneId);
-	}
+    if (isNull(nextVNode)) {
+      nextVNode = createCommentNode(EMPTY_REPLACER);
+      nextVNode.route = [0];
+    }
+
+    processDOM({ vNode, nextVNode });
+  }
+
+  if (!isInternalRenderCall) {
+    renderInProcess = false;
+  } else {
+    isInternalRenderCall = false;
+    setUIDActive(prevZoneId);
+  }
 }
 
-export {
-	renderComponent
-}
+export { renderComponent };

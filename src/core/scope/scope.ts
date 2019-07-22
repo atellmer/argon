@@ -6,7 +6,11 @@ type ScopeType = {
 	registery: Map<number, AppType>;
 	uid: number;
 	currentMountedRoute: Array<number>;
-	currentMountedComponentId: string | null;
+  currentMountedComponentId: string | null;
+  repeator: {
+    idx: number;
+    route: Array<number> | null;
+  };
 }
 
 type AppType = {
@@ -19,10 +23,10 @@ type AppType = {
 		removeEvent?: Function;
 	}>;
 	refs: Array<Function>;
-	queue: Array<Function>;
+  queue: Array<Function>;
 };
 
-let scope = createScope();
+const scope = createScope();
 const getRegistery = () => scope.registery;
 const setRegistery = (registery: Map<number, any>) => scope.registery = registery;
 const getUIDActive = (): number => scope.uid;
@@ -31,13 +35,35 @@ const getCurrentMountedRoute = (): Array<number> => [...scope.currentMountedRout
 const setCurrentMountedRoute = (route: Array<number>) => scope.currentMountedRoute = [...route];
 const getCurrentMountedComponentId = (): string | null => scope.currentMountedComponentId;
 const setCurrentMountedComponentId = (id: string | null) => scope.currentMountedComponentId = id;
+const repeatorScope = {
+  getRoute: () => [...scope.repeator.route],
+  setRoute: (route: Array<number>) => {
+    const scopeRoute = scope.repeator.route;
+
+    if (!scopeRoute || scopeRoute[scopeRoute.length - 1] !== route[scopeRoute.length - 1]) {
+      scope.repeator.route = [...route];
+      scope.repeator.idx = 0;
+    }
+  },
+  getIdx: () => scope.repeator.idx,
+  incrementIdx: () => scope.repeator.idx++,
+  resetIdx: () => scope.repeator.idx = 0,
+  reset: () => {
+    scope.repeator.route = null;
+    scope.repeator.idx = 0;
+  },
+}
 
 function createScope(): ScopeType {
 	return {
 		registery: new Map(),
 		uid: 0,
 		currentMountedComponentId: null,
-		currentMountedRoute: []
+    currentMountedRoute: [],
+    repeator: {
+      idx: 0,
+      route: null,
+    },
 	};
 }
 
@@ -49,7 +75,7 @@ function createApp(nativeElement: HTMLElement): AppType {
 		eventHandlersCache: [],
 		eventHandlers: new WeakMap(),
 		refs: [],
-		queue: []
+		queue: [],
 	}
 }
 
@@ -63,7 +89,8 @@ export {
 	getCurrentMountedRoute,
 	setCurrentMountedRoute,
 	getCurrentMountedComponentId,
-	setCurrentMountedComponentId,
+  setCurrentMountedComponentId,
+  repeatorScope,
 	createScope,
 	createApp,
 }

@@ -7,7 +7,11 @@
     "array-type": false,
     "no-empty": false,
     "ordered-imports": true,
-    "cyclomatic-complexity": true,
+    "cyclomatic-complexity": {
+      "options": [
+        60
+      ]
+    },
     "no-shadowed-variable": false,
     "max-line-length": {
       "options": [
@@ -27,6 +31,7 @@
     "curly": false,
     "object-literal-sort-keys": false,
     "ban-types": false,
-    "no-default-export": true
+    "no-default-export": true,
+    "indent": false
   }
 }

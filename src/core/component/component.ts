@@ -256,7 +256,7 @@ function createComponent(defObj: ComponentDefType | Function, options: Component
 				? {
 						isStatelessComponent: true,
 						displayName,
-						createElement: () => def(computedProps),
+						createElement: (id) => def({ ...computedProps, id }),
 						uid: 0,
 						props: computedProps,
 					} as StatelessComponentFactoryType
