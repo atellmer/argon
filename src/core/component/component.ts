@@ -75,10 +75,10 @@ type ComponentOptions = {
 	defaultProps?: any;
 }
 
-interface ComponentType extends ComponentDefType {
+type ComponentType = {
 	setState?: (state, cb?) => void;
 	forceUpdate?: () => void;
-}
+} & ComponentDefType;
 
 type StatefullComponentFactoryType = {
 	isStatefullComponent: boolean;
@@ -87,8 +87,7 @@ type StatefullComponentFactoryType = {
 	getElementToken: () => Symbol;
 	config: {
 		pure: boolean;
-	},
-	mountPortal: (id: string, nextVNode: VirtualNodeType) => void | null;
+	};
 	props: {
 		ref?: any;
 		key?: any;
@@ -156,12 +155,12 @@ function createComponent(defObj: ComponentDefType | Function, options: Component
 		'willUpdate': true,
 		'didUpdate': true,
 		'willUnmount': true,
-		'render': true
+		'render': true,
 	};
 	const reservedStaticPropNames = {};
 	class Component implements ComponentType {
-		state = getInitialState(def);
-		props = getDefaultProps(def);
+		public state = getInitialState(def);
+		public props = getDefaultProps(def);
 
 		constructor() {
 			const mapDefKeys = (key: string) => {
@@ -169,8 +168,8 @@ function createComponent(defObj: ComponentDefType | Function, options: Component
 					def[key] = def[key].bind(this);
 
 					return !reservedPropNames[def[key].name] && (this[key] = def[key]);
-				} 
-				
+				}
+
 				!reservedStaticPropNames[key] && (this[key] = def[key]);
 			};
 
@@ -184,10 +183,10 @@ function createComponent(defObj: ComponentDefType | Function, options: Component
 			this[$$portal] = false;
 		}
 
-		setState(state: {}, onRender = () => {}) {
+		public setState(state: {}, onRender = () => {}) {
 			const mergedState = {
 				...this.state,
-				...sanitize(state)
+				...sanitize(state),
 			};
 
 			if (!this.shouldUpdate(this.props, { ...mergedState })) return;
@@ -198,7 +197,7 @@ function createComponent(defObj: ComponentDefType | Function, options: Component
 			this.forceUpdate(onRender);
 		}
 
-		forceUpdate(onRender = () => {}) {
+		public forceUpdate(onRender = () => {}) {
 			forceUpdate(this, {
 				beforeRender: () => {
 					this.willUpdate(this.props, this.state);
@@ -210,35 +209,35 @@ function createComponent(defObj: ComponentDefType | Function, options: Component
 			});
 		}
 
-		willMount() {
+		public willMount() {
 			isFunction(def.willMount) && def.willMount();
 		}
 
-		didMount() {
+		public didMount() {
 			isFunction(def.didMount) && def.didMount();
 		}
 
-		willReceiveProps(nextProps) {
+		public willReceiveProps(nextProps) {
 			isFunction(def.willReceiveProps) && def.willReceiveProps(nextProps);
 		}
 
-		shouldUpdate(nextProps, nextState) {
+		public shouldUpdate(nextProps, nextState) {
 			return isFunction(def.shouldUpdate) ? def.shouldUpdate(nextProps, nextState) : true;
 		}
 
-		willUpdate(nextProps, nextState) {
+		public willUpdate(nextProps, nextState) {
 			isFunction(def.willUpdate) && def.willUpdate(nextProps, nextState);
 		}
 
-		didUpdate(prevProps, prevState) {
+		public didUpdate(prevProps, prevState) {
 			isFunction(def.didUpdate) && def.didUpdate(prevProps, prevState);
 		}
 
-		willUnmount() {
+		public willUnmount() {
 			isFunction(def.willUnmount) && def.willUnmount();
 		}
 
-		render() {
+		public render() {
 			if (isFunction(def.render)) return def.render();
 			error('render method does not exist!');
 		}
@@ -256,7 +255,7 @@ function createComponent(defObj: ComponentDefType | Function, options: Component
 				? {
 						isStatelessComponent: true,
 						displayName,
-						createElement: (id) => def({ ...computedProps, id }),
+						createElement: () => def({ ...computedProps }),
 						uid: 0,
 						props: computedProps,
 					} as StatelessComponentFactoryType
@@ -267,7 +266,6 @@ function createComponent(defObj: ComponentDefType | Function, options: Component
 						getElementToken: () => $$elementToken,
 						uid: 0,
 						config,
-						mountPortal: null,
 						props: computedProps,
 					} as StatefullComponentFactoryType;
 
@@ -312,7 +310,7 @@ function makeComponentTree(instance: ComponentType, parentId: string | null) {
 			parentId,
 			childrenIdMap: {},
 			lastChildId: '',
-			instance
+			instance,
 		};
 	
 		if (parentNode && !parentNode.childrenIdMap[id]) {
