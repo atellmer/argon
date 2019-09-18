@@ -389,10 +389,7 @@ function buildVirtualNodeWithRoutes(
   return node;
 }
 
-function transformTemplateStringToVirtualDOM(
-  str: TemplateStringsArray,
-  ...args: Array<any>
-): VirtualNodeType | Array<VirtualNodeType> {
+function transformTemplateStringToVirtualDOM(str: TemplateStringsArray, ...args: Array<any>): VirtualNodeType | Array<VirtualNodeType> {
   const separator = NODE_SEPARATOR;
   let markup = str.join(separator);
   let sourceVNode: VirtualNodeType | Array<VirtualNodeType> = null;
