@@ -1,8 +1,5 @@
 import {
-  ComponentTreeType,
   ComponentType,
-  getComponentId,
-  getComponentTree,
   isStatefullComponent,
   isStatelessComponent,
   StatefullComponentFactoryType,
@@ -56,12 +53,13 @@ import {
 import { deepClone, flatten, isArray, isEmpty, isFunction, isObject, isUndefined } from '../../../helpers';
 import { makeEvents } from '../events/events';
 
+
 type ProcessDOMOptionsType = {
   vNode: VirtualNodeType;
   nextVNode: VirtualNodeType;
   container?: HTMLElement;
   fragment?: boolean;
-};
+}
 
 function dom(str: TemplateStringsArray, ...args: any[]): VirtualNodeType | VirtualNodeType[] {
   const vNode = transformTemplateStringToVirtualDOM(str, ...args);
@@ -210,13 +208,9 @@ function patchDOM(diff: VirtualDOMDiffType[], $node: HTMLElement, uid: number) {
       const newNode = mount(diffElement.nextValue as VirtualNodeType);
       node.appendChild(newNode);
     } else if (diffElement.action === VDOM_ACTIONS.REMOVE_NODE) {
-      const componentId = getComponentId(diffElement.oldValue as VirtualNodeType);
-      componentId && unmountComponent(componentId, uid);
       node.parentNode.removeChild(node);
     } else if (diffElement.action === VDOM_ACTIONS.REPLACE_NODE) {
       const newNode = mount(diffElement.nextValue as VirtualNodeType);
-      const componentId = getComponentId(diffElement.oldValue as VirtualNodeType);
-      componentId && unmountComponent(componentId, uid);
       node.replaceWith(newNode);
     } else if (diffElement.action === VDOM_ACTIONS.ADD_ATTRIBUTE) {
       const attrValueBlackList = [EVENT_HANDLER_REPLACER];

@@ -1,7 +1,6 @@
 import { deepClone, flatten, isArray, isEmpty, isFunction, isNull, isUndefined } from '../../helpers';
 import {
   ComponentType,
-  getComponentId,
   getPublicInstance,
   isStatefullComponent,
   isStatelessComponent,
@@ -43,7 +42,7 @@ import {
   repeatorScope,
   setCurrentMountedRoute,
 } from '../scope';
-import { HashMap } from '../shared';
+
 
 type VirtualNodeTagType = 'TAG' | 'TEXT' | 'COMMENT';
 
@@ -53,7 +52,7 @@ type VirtualNodeType = {
   type: VirtualNodeTagType;
   name?: string;
   void?: boolean;
-  attrs?: HashMap<string>;
+  attrs?: Record<string, string>;
   content?: string;
   children: Array<VirtualNodeType>;
   props?: any;
@@ -72,8 +71,8 @@ type VirtualDOMActionsType =
 type VirtualDOMDiffType = {
   action: VirtualDOMActionsType;
   route: Array<number>;
-  oldValue: VirtualNodeType | HashMap<number | string | boolean>;
-  nextValue: VirtualNodeType | HashMap<number | string | boolean>;
+  oldValue: VirtualNodeType | Record<string, number | string | boolean>;
+  nextValue: VirtualNodeType | Record<string, number | string | boolean>;
 };
 
 type ElementReplacerType<T> = {
@@ -119,7 +118,7 @@ const voidAttrsMap = {
   hidden: true,
 };
 
-function createVirtualNode(type: VirtualNodeTagType, config: HashMap<any> = {}) {
+function createVirtualNode(type: VirtualNodeTagType, config: Record<string, any> = {}) {
   return {
     isVirtualNode: true,
     id: '',
@@ -723,7 +722,7 @@ function getVirtualDOM(uid: number): VirtualNodeType {
 }
 
 export {
-  VirtualNodeTagType,
+  VirtualNodeTagType, //
   VirtualNodeType,
   VirtualDOMActionsType,
   VirtualDOMDiffType,

@@ -1,60 +1,57 @@
-import * as test from 'tape';
 import * as jsdom from 'jsdom-global';
+import * as test from 'tape';
 
-import { transformMarkup, html } from '../../../../test/helpers';
+import { html, transformMarkup } from '../../../../test/helpers';
+import { createComponent, StatefullComponentFactoryType } from '../../../core/component/component';
 import { EMPTY_REPLACER } from '../../../core/constants/constants';
-import {
-	StatefullComponentFactoryType,
-	createComponent,
-} from '../../../core/component/component';
-import { dom } from './dom';
 import { VirtualNodeType } from '../../../core/vdom/vdom';
 import { renderComponent } from '../render';
+import { dom } from './dom';
 
 jsdom();
 
 test(`[DOM]: rendering different types:`, t => {
-	const tag = dom`<div>Hello</div>` as VirtualNodeType;
-	const comment = dom`<!-- Comment -->` as VirtualNodeType;
-	const text = dom`some text` as VirtualNodeType;
-	const list = dom`
+  const tag = dom`<div>Hello</div>` as VirtualNodeType;
+  const comment = dom`<!-- Comment -->` as VirtualNodeType;
+  const text = dom`some text` as VirtualNodeType;
+  const list = dom`
 		<div>1</div>
 		text
 		<!-- Comment -->
 	`;
 
-	t.equal(tag.type, 'TAG', 'tag');
-	t.equal(comment.type, 'COMMENT', 'comment');
-	t.equal(text.type, 'TEXT', 'text');
-	t.equal(Array.isArray(list), true, 'list');
+  t.equal(tag.type, 'TAG', 'tag');
+  t.equal(comment.type, 'COMMENT', 'comment');
+  t.equal(text.type, 'TEXT', 'text');
+  t.equal(Array.isArray(list), true, 'list');
   t.end();
 });
 
 test(`[DOM]: rendering null or text`, t => {
-	const DOMElement = document.createElement('div');
-	const text = 'some text...';
-	const empty = `<!--${EMPTY_REPLACER}-->`;
+  const DOMElement = document.createElement('div');
+  const text = 'some text...';
+  const empty = `<!--${EMPTY_REPLACER}-->`;
 
-  t.doesNotThrow(() => {	
-		const App = createComponent(({ isOpen }) => isOpen? dom`${text}` : null);	
+  t.doesNotThrow(() => {
+    const App = createComponent(({ isOpen }) => (isOpen ? dom`${text}` : null));
 
-		renderComponent(App({ isOpen: false }), DOMElement);
-		t.equal(empty, html(DOMElement), 'empty');
+    renderComponent(App({ isOpen: false }), DOMElement);
+    t.equal(empty, html(DOMElement), 'empty');
 
-		renderComponent(App({ isOpen: true }), DOMElement);
-		t.equal(transformMarkup(text), transformMarkup(html(DOMElement)), 'text');
+    renderComponent(App({ isOpen: true }), DOMElement);
+    t.equal(transformMarkup(text), transformMarkup(html(DOMElement)), 'text');
 
-		renderComponent(App({ isOpen: false }), DOMElement);
-		t.equal(empty, html(DOMElement), 'empty');
+    renderComponent(App({ isOpen: false }), DOMElement);
+    t.equal(empty, html(DOMElement), 'empty');
 
-		renderComponent(App({ isOpen: true }), DOMElement);
-		t.equal(transformMarkup(text), transformMarkup(html(DOMElement)), 'text');
+    renderComponent(App({ isOpen: true }), DOMElement);
+    t.equal(transformMarkup(text), transformMarkup(html(DOMElement)), 'text');
 
-		renderComponent(App({ isOpen: false }), DOMElement);
-		t.equal(empty, html(DOMElement), 'empty');
+    renderComponent(App({ isOpen: false }), DOMElement);
+    t.equal(empty, html(DOMElement), 'empty');
 
-		renderComponent(App({ isOpen: true }), DOMElement);
-		t.equal(transformMarkup(text), transformMarkup(html(DOMElement)), 'text');
+    renderComponent(App({ isOpen: true }), DOMElement);
+    t.equal(transformMarkup(text), transformMarkup(html(DOMElement)), 'text');
 
     t.end();
   });
@@ -62,48 +59,47 @@ test(`[DOM]: rendering null or text`, t => {
 
 test(`[DOM]: rendering null or tag`, t => {
   const DOMElement = document.createElement('div');
-	const tag = `<div>tag</div>`;
-	const empty = `<!--${EMPTY_REPLACER}-->`;
+  const tag = `<div>tag</div>`;
+  const empty = `<!--${EMPTY_REPLACER}-->`;
 
-  t.doesNotThrow(() => {	
-		const App = createComponent(({ isOpen }) => isOpen ? dom`${tag}` : null);	
+  t.doesNotThrow(() => {
+    const App = createComponent(({ isOpen }) => (isOpen ? dom`${tag}` : null));
 
-		renderComponent(App({ isOpen: false }), DOMElement);
-		t.equal(empty, html(DOMElement), 'empty');
+    renderComponent(App({ isOpen: false }), DOMElement);
+    t.equal(empty, html(DOMElement), 'empty');
 
-		renderComponent(App({ isOpen: true }), DOMElement);
-		t.equal(tag, html(DOMElement), 'tag');
+    renderComponent(App({ isOpen: true }), DOMElement);
+    t.equal(tag, html(DOMElement), 'tag');
 
-		renderComponent(App({ isOpen: false }), DOMElement);
-		t.equal(empty, html(DOMElement), 'empty');
+    renderComponent(App({ isOpen: false }), DOMElement);
+    t.equal(empty, html(DOMElement), 'empty');
 
-		renderComponent(App({ isOpen: true }), DOMElement);
-		t.equal(tag, html(DOMElement), 'tag');
+    renderComponent(App({ isOpen: true }), DOMElement);
+    t.equal(tag, html(DOMElement), 'tag');
 
-		renderComponent(App({ isOpen: false }), DOMElement);
-		t.equal(empty, html(DOMElement), 'empty');
+    renderComponent(App({ isOpen: false }), DOMElement);
+    t.equal(empty, html(DOMElement), 'empty');
 
-		renderComponent(App({ isOpen: true }), DOMElement);
-		t.equal(tag, html(DOMElement), 'tag');
+    renderComponent(App({ isOpen: true }), DOMElement);
+    t.equal(tag, html(DOMElement), 'tag');
 
     t.end();
   });
 });
 
-
 test(`[DOM]: rendering different tags:`, t => {
   const DOMElement = document.createElement('div');
-	const tag1 = `<div>tag</div>`;
-	const tag2 = `<span>tag</span>`;
+  const tag1 = `<div>tag</div>`;
+  const tag2 = `<span>tag</span>`;
 
-  t.doesNotThrow(() => {	
-		const App = createComponent(({ isOpen }) => isOpen ? dom`${tag1}` : dom`${tag2}`);	
+  t.doesNotThrow(() => {
+    const App = createComponent(({ isOpen }) => (isOpen ? dom`${tag1}` : dom`${tag2}`));
 
-		renderComponent(App({ isOpen: true }), DOMElement);
-		t.equal(tag1, html(DOMElement), 'tag div');
+    renderComponent(App({ isOpen: true }), DOMElement);
+    t.equal(tag1, html(DOMElement), 'tag div');
 
-		renderComponent(App({ isOpen: false }), DOMElement);
-		t.equal(tag2, html(DOMElement), 'tag span');
+    renderComponent(App({ isOpen: false }), DOMElement);
+    t.equal(tag2, html(DOMElement), 'tag span');
 
     t.end();
   });
@@ -122,7 +118,7 @@ test(`[DOM]: render dom correctly`, (t) => {
 			`;
 		}
 	});
-	
+
 	const $container = document.createElement('div');
 	renderComponent(Component() as StatefullComponentFactoryType, $container);
 
@@ -159,7 +155,7 @@ test(`[DOM]: render list of components`, (t) => {
 			`;
 		}
 	});
-	
+
 	$container = document.createElement('div');
 	renderComponent(List1() as StatefullComponentFactoryType, $container);
 
