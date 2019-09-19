@@ -56,8 +56,6 @@ function isInsertDirective(o: any) {
   return isObject(o) && !isEmpty(o) && o.isInsertDirective === true;
 }
 
-
-
 export {
   RepeatDirectiveType, //
   InsertDirectiveType,

@@ -90,6 +90,8 @@ test(`[Directives]: repeat directive render correctly`, t => {
   const vNode = render(App) as VirtualNodeType;
   const actualNodeIds = vNode.children.map(vNode => vNode.id);
 
+  t.equals(vNode.children.length, 26, 'render right number of children');
+
   t.deepEquals(actualNodeIds, expectedNodeIds, 'node ids set correctly');
 
   const actualDeepChildNodeIds = [

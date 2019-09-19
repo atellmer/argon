@@ -85,55 +85,32 @@ import * as Argon from '../src';
 
 
 
-const Item2 = Argon.createComponent(({ x, id }) => {
-  //console.log('id: ', id)
+const Item = Argon.createComponent(({ x }) => {
   return Argon.dom`
-    <div>
-      <div>item: ${x}</div>
-      <div>...</div>
-    </div>
+    <div>item: ${x}</div>
   `
 });
 
-const Item = Argon.createComponent(({ x }) => {
-	return Argon.dom`${Argon.repeat([111, 222], (v, idx) => Item2({x: `${x}_${v}`, key: v}))}`
-});
-
-const List = Argon.createComponent(({ x }) => {
-	return Argon.dom`${Argon.repeat([11, 22, 33], (v, idx) => Item({x: `${x}_${v}`, key: v}))}`
-});
-
-const Header = Argon.createComponent(({ isOpen }) => {
-	return Argon.dom`${Argon.repeat([1, 2], (x) => List({x, key: x}))}`
+const List = Argon.createComponent(({ isOpen }) => {
+  return Argon.dom`
+    ${['text', 123, 'zzz']}
+  `
 });
 
 const App = Argon.createComponent(({ isOpen }) => {
-	return Argon.dom`
-    <div class="app">
-      <button on:click="${e => console.log('click 1')}">click me</button>
-      ${isOpen && Header({ })}
-      ${Argon.repeat([1, 2, 3], (v, idx) => Item2({x: v, key: v}))}
-      ${isOpen && Argon.repeat([1, 2, 3, 4], (v, idx) => Argon.dom`<div>666</div>`)}
-      <button on:click="${e => console.log('click 2')}">
-        click me
-      </button>
-      <div><div>---</div></div>
-      ${isOpen && Argon.repeat([1, 2, 3, 4], (v, idx) => Argon.dom`<div>666</div>`)}
-      <button on:click="${e => console.log('click 2')}">
-        click me
-      </button>
-		</div>
-	`
+  return Argon.dom`
+    ${isOpen ? ['text', 123, 'zzz'] : `<span>xxx</span>`}
+  `
 });
 
 Argon.renderComponent(App({ isOpen: true }), document.getElementById('app'));
 
-// setTimeout(() => {
-//   Argon.renderComponent(App({ isOpen: false }), document.getElementById('app'));
-// }, 1000)
+setTimeout(() => {
+  Argon.renderComponent(App({ isOpen: false }), document.getElementById('app'));
+}, 1000)
 
-// setTimeout(() => {
-//   Argon.renderComponent(App({ isOpen: true }), document.getElementById('app'));
-// }, 2000)
+setTimeout(() => {
+  Argon.renderComponent(App({ isOpen: true }), document.getElementById('app'));
+}, 2000)
 
 

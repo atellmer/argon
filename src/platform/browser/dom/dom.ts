@@ -67,18 +67,22 @@ function dom(str: TemplateStringsArray, ...args: any[]): VirtualNodeType | Virtu
   return vNode;
 }
 
+type MountedElementType =  HTMLElement | Text | Comment
+
 function mount(
   vdom: VirtualNodeType | VirtualNodeType[],
   parentNode: HTMLElement = null,
-): HTMLElement | Text | Comment {
-  let container: HTMLElement | Text | Comment = parentNode;
+): MountedElementType | Array<MountedElementType> {
+  let container: MountedElementType = parentNode || null;
+  const list: Array<MountedElementType> = [];
+  let isRootFragment = false;
   const attrValueBlackList = [EVENT_HANDLER_REPLACER];
   const mapVDOM = (vNode: VirtualNodeType) => {
     if (!vNode) {
       return;
     }
 
-    const isContainerExists = container && container.nodeType === Node.ELEMENT_NODE;
+    const isContainerExists = Boolean(container) && container.nodeType === Node.ELEMENT_NODE;
 
     if (vNode.type === VDOM_ELEMENT_TYPES.TAG) {
       const DOMElement = document.createElement(vNode.name);
@@ -94,32 +98,55 @@ function mount(
           container.appendChild(node);
         }
       } else {
-        container = DOMElement;
-        container = mount(vNode.children, container);
+        const node = mount(vNode.children, DOMElement) as HTMLElement;
+        if (isRootFragment) {
+          list.push(node);
+        } else {
+          container = node;
+        }
       }
     } else if (vNode.type === VDOM_ELEMENT_TYPES.TEXT) {
+      const textNode = document.createTextNode(vNode.content);
       if (isContainerExists) {
-        container.appendChild(document.createTextNode(vNode.content));
+        container.appendChild(textNode);
       } else {
-        container = document.createTextNode(vNode.content);
+        if (isRootFragment) {
+          list.push(textNode);
+        } else {
+          container = textNode;
+        }
       }
     } else if (vNode.type === VDOM_ELEMENT_TYPES.COMMENT) {
+      const commentNode = document.createComment(vNode.content);
       if (isContainerExists) {
-        container.appendChild(document.createComment(vNode.content));
+        container.appendChild(commentNode);
       } else {
-        container = document.createComment(vNode.content);
+        if (isRootFragment) {
+          list.push(commentNode);
+        } else {
+          container = commentNode;
+        }
       }
     }
   };
+  const mapVNodeFn = (vNode: VirtualNodeType) => mapVDOM(vNode);
+
+  const vNode = vdom as VirtualNodeType;
+
+  if (!isArray(vNode) && vNode.name === 'root') {
+    isRootFragment = true;
+    vdom = vNode.children;
+  }
 
   if (isArray(vdom)) {
-    const mapVNodeFn = (vNode: VirtualNodeType) => mapVDOM(vNode);
     (vdom as VirtualNodeType[]).forEach(mapVNodeFn);
   } else {
     mapVDOM(vdom as VirtualNodeType);
   }
 
-  return container;
+  console.log('container: ', container)
+  console.log('list: ', list)
+  return container || list;
 }
 
 function getDOMElementRoute(
@@ -269,9 +296,12 @@ function processDOM({ vNode = null, nextVNode = null, container = null, fragment
   const DOMElement = getDOMElement();
   let diff = [];
 
+  console.log('DOMElement: ', DOMElement)
+
   app.queue.push(() => makeEvents(nextVNode, uid));
-  nextVNode = defragment(nextVNode);
   diff = getVirtualDOMDiff(vNode, nextVNode);
+
+  console.log('diff: ', diff)
 
   patchDOM(diff, DOMElement, uid);
 

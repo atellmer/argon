@@ -394,11 +394,12 @@ function transformTemplateStringToVirtualDOM(str: TemplateStringsArray, ...args:
   let markup = str.join(separator);
   let sourceVNode: VirtualNodeType | Array<VirtualNodeType> = null;
   let vNode: VirtualNodeType | Array<VirtualNodeType> = null;
+  let currentRoute = getCurrentMountedRoute();
+  const isRoot = currentRoute.length === 1;
   const uid = getUIDActive();
   const app = getRegistery().get(uid);
   const elements: Array<ElementReplacerType<any>> = [];
   const eventMap = new Map();
-  const currentRoute = getCurrentMountedRoute();
   const mapArgsFn = (arg: any, argIdx: number) => {
     let replacer = '';
 
@@ -448,12 +449,16 @@ function transformTemplateStringToVirtualDOM(str: TemplateStringsArray, ...args:
   sourceVNode = sourceVNode.length > 1 ? sourceVNode : sourceVNode[0];
 
   if (isArray(sourceVNode)) {
-    const transitVNodeList = (sourceVNode as Array<VirtualNodeType>).map(transitVNode =>
-      buildVirtualNodeWithRoutes(transitVNode, currentRoute, currentRoute.length, 0, true),
-    );
+    const transitVNodeList = (sourceVNode as Array<VirtualNodeType>)
+      .map(transitVNode => buildVirtualNodeWithRoutes(transitVNode, currentRoute, currentRoute.length, 0, true));
     vNode = mountVirtualDOMList(transitVNodeList, elements);
   } else {
     const transitVNode = sourceVNode as VirtualNodeType;
+
+    if (isRoot && isCommentVirtualNode(transitVNode) && transitVNode.content === LIST_REPLACER) {
+      setCurrentMountedRoute([0, 1]);
+      currentRoute = getCurrentMountedRoute();
+    }
 
     sourceVNode = buildVirtualNodeWithRoutes(transitVNode, currentRoute, currentRoute.length, 0, true);
     vNode = mountVirtualDOM(sourceVNode as VirtualNodeType, elements);
@@ -465,9 +470,6 @@ function transformTemplateStringToVirtualDOM(str: TemplateStringsArray, ...args:
     }
   }
 
-  // if (vNode.attrs && vNode.attrs.class === 'app') {
-  //   console.log('vNode', deepClone(vNode));
-  // }
 
   return vNode;
 }
