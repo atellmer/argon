@@ -19,21 +19,21 @@ let isInternalRenderCall = false;
 let zoneCount = 0;
 
 function createRootVirtualNode(sourceVNode: VirtualNodeType | Array<VirtualNodeType> | null): VirtualNodeType {
-  let vNode = sourceVNode;
+  let vNode = null;
 
-  if (isArray(vNode)) {
-    vNode = createVirtualNode('TAG', {
-      name: 'root',
-      id: '0',
-      route: [0],
-      children: [...vNode],
-    });
-  } else if (isNull(vNode)) {
-    vNode = createCommentNode(EMPTY_REPLACER);
-    vNode.route = [0];
+  if (isNull(sourceVNode)) {
+    sourceVNode = createCommentNode(EMPTY_REPLACER);
+    sourceVNode.route = [0, 0];
   }
 
-  return vNode as VirtualNodeType;
+  vNode = createVirtualNode('TAG', {
+    name: 'root',
+    id: '0',
+    route: [0],
+    children: isArray(sourceVNode) ? [...sourceVNode] : [sourceVNode],
+  });
+
+  return vNode;
 }
 
 function renderComponent(
@@ -78,15 +78,12 @@ function renderComponent(
     }
 
     vNode = createRootVirtualNode(vNode);
-
     app.queue.push(() => makeEvents(vNode, zoneId));
     app.vdom = vNode;
-    const mountedNode = mount(vNode);
-    isArray(mountedNode)
-      ? (mountedNode as Array<any>).forEach(node => container.appendChild(node))
-      : container.appendChild(mountedNode as any);
+    Array.from(mount(vNode).childNodes).forEach(node => container.appendChild(node));
     app.queue.forEach(fn => fn());
     app.queue = [];
+    console.log('vNode: ', vNode)
   } else {
     const vNode = getVirtualDOM(zoneId);
     let nextVNode: VirtualNodeType = null;
@@ -98,12 +95,7 @@ function renderComponent(
     }
 
     nextVNode = createRootVirtualNode(nextVNode);
-
-    console.log('vNode: ', vNode)
-    console.log('nextVNode: ', nextVNode)
-    const isFragment = vNode.name === 'root' || nextVNode.name === 'root'
-
-    processDOM({ vNode, nextVNode, fragment: isFragment });
+    processDOM({ vNode, nextVNode });
   }
 
   if (!isInternalRenderCall) {

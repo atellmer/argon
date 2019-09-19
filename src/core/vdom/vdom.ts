@@ -389,13 +389,14 @@ function buildVirtualNodeWithRoutes(
   return node;
 }
 
+let isDirectiveMounted = false;
+
 function transformTemplateStringToVirtualDOM(str: TemplateStringsArray, ...args: Array<any>): VirtualNodeType | Array<VirtualNodeType> {
   const separator = NODE_SEPARATOR;
   let markup = str.join(separator);
   let sourceVNode: VirtualNodeType | Array<VirtualNodeType> = null;
   let vNode: VirtualNodeType | Array<VirtualNodeType> = null;
-  let currentRoute = getCurrentMountedRoute();
-  const isRoot = currentRoute.length === 1;
+  const currentRoute = getCurrentMountedRoute();
   const uid = getUIDActive();
   const app = getRegistery().get(uid);
   const elements: Array<ElementReplacerType<any>> = [];
@@ -450,23 +451,18 @@ function transformTemplateStringToVirtualDOM(str: TemplateStringsArray, ...args:
 
   if (isArray(sourceVNode)) {
     const transitVNodeList = (sourceVNode as Array<VirtualNodeType>)
-      .map(transitVNode => buildVirtualNodeWithRoutes(transitVNode, currentRoute, currentRoute.length, 0, true));
+      .map((transitVNode, idx) => buildVirtualNodeWithRoutes(transitVNode, currentRoute, currentRoute.length, idx));
     vNode = mountVirtualDOMList(transitVNodeList, elements);
   } else {
     const transitVNode = sourceVNode as VirtualNodeType;
 
-    if (isRoot && isCommentVirtualNode(transitVNode) && transitVNode.content === LIST_REPLACER) {
-      setCurrentMountedRoute([0, 1]);
-      currentRoute = getCurrentMountedRoute();
-    }
-
-    sourceVNode = buildVirtualNodeWithRoutes(transitVNode, currentRoute, currentRoute.length, 0, true);
+    sourceVNode = buildVirtualNodeWithRoutes(transitVNode, currentRoute, currentRoute.length, 0, isDirectiveMounted);
     vNode = mountVirtualDOM(sourceVNode as VirtualNodeType, elements);
 
     if (!isArray(vNode)) {
       const transitVNode = vNode as VirtualNodeType;
 
-      vNode = buildVirtualNodeWithRoutes(transitVNode, currentRoute, currentRoute.length, 0, true);
+      vNode = buildVirtualNodeWithRoutes(transitVNode, currentRoute, currentRoute.length, 0, isDirectiveMounted);
     }
   }
 
@@ -493,18 +489,22 @@ function mountVirtualDOM(
     const textContent = mountedVNode.content;
 
     if (textContent === INSERT_DIRECTIVE_REPLACER) {
+      isDirectiveMounted = true;
       const findElementFn = (e: ElementReplacerType<VirtualNodeType>) => e.type === INSERT_DIRECTIVE;
       const findVNodeFn = (vNode: VirtualNodeType) =>
         vNode.type === VDOM_ELEMENT_TYPES.COMMENT && vNode.content === INSERT_DIRECTIVE_REPLACER;
       const elementIdx = elements.findIndex(findElementFn);
       const vNodeIdx = parentVNode && parentVNode.children.findIndex(findVNodeFn);
       const insertDirective = elements[elementIdx].value as InsertDirectiveType;
-      const nextVNode = insertDirective.createElement() as VirtualNodeType;
+      const nextVNode = insertDirective.createElement();
+
+      isDirectiveMounted = false;
 
       if (parentVNode) {
-        parentVNode.children[vNodeIdx] = nextVNode;
+        const list = (isArray(nextVNode) ? [...nextVNode] : [nextVNode]) as Array<VirtualNodeType>;
+        parentVNode.children.splice(vNodeIdx, 1, ...list);
       } else {
-        return nextVNode;
+        return nextVNode as VirtualNodeType;
       }
     } else if (textContent === REPEAT_DIRECTIVE_REPLACER) {
       const findElementFn = (e: ElementReplacerType<VirtualNodeType>) => e.type === REPEAT_DIRECTIVE;
@@ -514,6 +514,7 @@ function mountVirtualDOM(
       const vNodeIdx = parentVNode && parentVNode.children.findIndex(findVNodeFn);
       const repeatDirective = elements[elementIdx].value as RepeatDirectiveType;
       const mapRepeatItems = (item: any, idx: number): VirtualNodeType => {
+        isDirectiveMounted = true;
         let element = null;
         const route = [...repeatorScope.getRoute(), repeatorScope.getIdx()];
         const nodeId = getNodeId(repeatorScope.getRoute(), repeatorScope.getIdx());
@@ -528,6 +529,8 @@ function mountVirtualDOM(
             repeatorScope.incrementIdx();
           }
 
+          isDirectiveMounted = false;
+
           return element;
         } else if (isStatelessComponent(element)) {
           const componentFactory = element as StatelessComponentFactoryType;
@@ -541,8 +544,12 @@ function mountVirtualDOM(
             repeatorScope.incrementIdx();
           }
 
+          isDirectiveMounted = false;
+
           return vNode;
         }
+
+        isDirectiveMounted = false;
 
         return element;
       };
@@ -561,6 +568,7 @@ function mountVirtualDOM(
         return vNodeList;
       }
     } else if (textContent === LIST_REPLACER) {
+      isDirectiveMounted = true;
       const findElementFn = (e: ElementReplacerType<VirtualNodeType>) => e.type === LIST;
       const findVNodeFn = (vNode: VirtualNodeType) =>
         vNode.type === VDOM_ELEMENT_TYPES.COMMENT && vNode.content === LIST_REPLACER;
@@ -576,6 +584,7 @@ function mountVirtualDOM(
       };
       const vNodeList = list.map(mapListItemFn);
 
+      isDirectiveMounted = false;
       elements.splice(elementIdx, 1);
 
       if (parentVNode) {
@@ -589,6 +598,7 @@ function mountVirtualDOM(
         return vNodeList;
       }
     } else if (textContent === STATELESS_COMPONENT_REPLACER) {
+      isDirectiveMounted = true;
       const findElementFn = (e: ElementReplacerType<VirtualNodeType>) => e.type === STATELESS_COMPONENT;
       const findVNodeFn = (vNode: VirtualNodeType) =>
         vNode.type === VDOM_ELEMENT_TYPES.COMMENT && vNode.content === STATELESS_COMPONENT_REPLACER;
@@ -614,6 +624,7 @@ function mountVirtualDOM(
 
       elements.splice(elementIdx, 1);
       queueEvents.forEach(mapFn);
+      isDirectiveMounted = false;
 
       if (parentVNode) {
         if (isList) {

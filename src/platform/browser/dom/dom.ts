@@ -67,15 +67,11 @@ function dom(str: TemplateStringsArray, ...args: any[]): VirtualNodeType | Virtu
   return vNode;
 }
 
-type MountedElementType =  HTMLElement | Text | Comment
-
 function mount(
   vdom: VirtualNodeType | VirtualNodeType[],
   parentNode: HTMLElement = null,
-): MountedElementType | Array<MountedElementType> {
-  let container: MountedElementType = parentNode || null;
-  const list: Array<MountedElementType> = [];
-  let isRootFragment = false;
+): HTMLElement | Text | Comment {
+  let container: HTMLElement | Text | Comment | null = parentNode || null;
   const attrValueBlackList = [EVENT_HANDLER_REPLACER];
   const mapVDOM = (vNode: VirtualNodeType) => {
     if (!vNode) {
@@ -99,44 +95,25 @@ function mount(
         }
       } else {
         const node = mount(vNode.children, DOMElement) as HTMLElement;
-        if (isRootFragment) {
-          list.push(node);
-        } else {
-          container = node;
-        }
+        container = node;
       }
     } else if (vNode.type === VDOM_ELEMENT_TYPES.TEXT) {
       const textNode = document.createTextNode(vNode.content);
       if (isContainerExists) {
         container.appendChild(textNode);
       } else {
-        if (isRootFragment) {
-          list.push(textNode);
-        } else {
-          container = textNode;
-        }
+        container = textNode;
       }
     } else if (vNode.type === VDOM_ELEMENT_TYPES.COMMENT) {
       const commentNode = document.createComment(vNode.content);
       if (isContainerExists) {
         container.appendChild(commentNode);
       } else {
-        if (isRootFragment) {
-          list.push(commentNode);
-        } else {
-          container = commentNode;
-        }
+        container = commentNode;
       }
     }
   };
   const mapVNodeFn = (vNode: VirtualNodeType) => mapVDOM(vNode);
-
-  const vNode = vdom as VirtualNodeType;
-
-  if (!isArray(vNode) && vNode.name === 'root') {
-    isRootFragment = true;
-    vdom = vNode.children;
-  }
 
   if (isArray(vdom)) {
     (vdom as VirtualNodeType[]).forEach(mapVNodeFn);
@@ -144,9 +121,7 @@ function mount(
     mapVDOM(vdom as VirtualNodeType);
   }
 
-  console.log('container: ', container)
-  console.log('list: ', list)
-  return container || list;
+  return container;
 }
 
 function getDOMElementRoute(
@@ -272,36 +247,19 @@ function patchDOM(diff: VirtualDOMDiffType[], $node: HTMLElement, uid: number) {
   diff.forEach(mapDiff);
 }
 
-function processDOM({ vNode = null, nextVNode = null, container = null, fragment = false }: ProcessDOMOptionsType) {
+function processDOM({ vNode = null, nextVNode = null, container = null }: ProcessDOMOptionsType) {
   const uid = getUIDActive();
   const app = getRegistery().get(uid);
-  const isRoot = nextVNode.route.length === 1;
   const getDOMElement = () => {
-    if (container) {
-      return container;
-    }
-    if (fragment) {
-      return app.nativeElement;
-    }
+    if (container) return container;
 
-    const isVNodeTag = isTagVirtualNode(vNode);
-    const isNextVNodeTag = isTagVirtualNode(nextVNode);
-
-    if (isRoot && ((!isVNodeTag && isNextVNodeTag) || (!isVNodeTag && !isNextVNodeTag))) {
-      return app.nativeElement;
-    }
-
-    return app.nativeElement.children[0] as HTMLElement;
+    return app.nativeElement as HTMLElement;
   };
   const DOMElement = getDOMElement();
   let diff = [];
 
-  console.log('DOMElement: ', DOMElement)
-
   app.queue.push(() => makeEvents(nextVNode, uid));
   diff = getVirtualDOMDiff(vNode, nextVNode);
-
-  console.log('diff: ', diff)
 
   patchDOM(diff, DOMElement, uid);
 

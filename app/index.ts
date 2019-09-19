@@ -86,21 +86,26 @@ import * as Argon from '../src';
 
 
 const Item = Argon.createComponent(({ x }) => {
-  return Argon.dom`
-    <div>item: ${x}</div>
-  `
+  return Argon.dom`<div>${x}</div>`;
 });
-
-const List = Argon.createComponent(({ isOpen }) => {
-  return Argon.dom`
-    ${['text', 123, 'zzz']}
-  `
+const ListLevelThree = Argon.createComponent(() => {
+  return Argon.dom`${Argon.repeat([111, 222], x => Item({ x, key: x }))}`;
 });
-
+const ListLevelTwo = Argon.createComponent(() => {
+  return Argon.dom`${Argon.repeat([11, 22, 33], x => ListLevelThree({ key: x }))}`;
+});
+const ListLevelOne = Argon.createComponent(() => {
+  return Argon.dom`${Argon.repeat([1, 2], x => ListLevelTwo({ key: x }))}`;
+});
 const App = Argon.createComponent(({ isOpen }) => {
+  const renderPart = () => Argon.dom`${Argon.repeat(Array(3).fill(0), (x, idx) => Argon.dom`<div>${idx}</div>`)}`;
+
   return Argon.dom`
-    ${isOpen ? ['text', 123, 'zzz'] : `<span>xxx</span>`}
-  `
+    <div>
+      ${isOpen ?  Argon.insert(renderPart) : 'loading...'}
+      ${Argon.repeat(Array(3).fill(0), (x, idx) => Argon.dom`<div>${idx}</div>`)}
+    </div>
+  `;
 });
 
 Argon.renderComponent(App({ isOpen: true }), document.getElementById('app'));
