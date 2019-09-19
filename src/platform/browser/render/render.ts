@@ -83,7 +83,6 @@ function renderComponent(
     Array.from(mount(vNode).childNodes).forEach(node => container.appendChild(node));
     app.queue.forEach(fn => fn());
     app.queue = [];
-    console.log('vNode: ', vNode)
   } else {
     const vNode = getVirtualDOM(zoneId);
     let nextVNode: VirtualNodeType = null;

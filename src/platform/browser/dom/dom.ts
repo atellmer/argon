@@ -250,19 +250,13 @@ function patchDOM(diff: VirtualDOMDiffType[], $node: HTMLElement, uid: number) {
 function processDOM({ vNode = null, nextVNode = null, container = null }: ProcessDOMOptionsType) {
   const uid = getUIDActive();
   const app = getRegistery().get(uid);
-  const getDOMElement = () => {
-    if (container) return container;
-
-    return app.nativeElement as HTMLElement;
-  };
+  const getDOMElement = () => Boolean(container) ? container : app.nativeElement as HTMLElement;
   const DOMElement = getDOMElement();
   let diff = [];
 
   app.queue.push(() => makeEvents(nextVNode, uid));
   diff = getVirtualDOMDiff(vNode, nextVNode);
-
   patchDOM(diff, DOMElement, uid);
-
   app.queue.forEach(fn => fn());
   app.queue = [];
   app.vdom = nextVNode;

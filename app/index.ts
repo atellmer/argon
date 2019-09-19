@@ -97,13 +97,17 @@ const ListLevelTwo = Argon.createComponent(() => {
 const ListLevelOne = Argon.createComponent(() => {
   return Argon.dom`${Argon.repeat([1, 2], x => ListLevelTwo({ key: x }))}`;
 });
+const Portal = Argon.createComponent(({ isOpen }) => {
+  return Argon.dom`
+    <div>Portal: ${isOpen ? 'open' : 'close'}</div>
+  `
+});
 const App = Argon.createComponent(({ isOpen }) => {
-  const renderPart = () => Argon.dom`${Argon.repeat(Array(3).fill(0), (x, idx) => Argon.dom`<div>${idx}</div>`)}`;
+  Argon.renderComponent(Portal({ isOpen }), document.getElementById('portal'));
 
   return Argon.dom`
     <div>
-      ${isOpen ?  Argon.insert(renderPart) : 'loading...'}
-      ${Argon.repeat(Array(3).fill(0), (x, idx) => Argon.dom`<div>${idx}</div>`)}
+      ${isOpen && Argon.repeat(Array(10).fill(0), (x, idx) => Argon.dom`<div>${idx}</div>`)}
     </div>
   `;
 });
@@ -112,10 +116,10 @@ Argon.renderComponent(App({ isOpen: true }), document.getElementById('app'));
 
 setTimeout(() => {
   Argon.renderComponent(App({ isOpen: false }), document.getElementById('app'));
-}, 1000)
+}, 5000)
 
 setTimeout(() => {
   Argon.renderComponent(App({ isOpen: true }), document.getElementById('app'));
-}, 2000)
+}, 10000)
 
 

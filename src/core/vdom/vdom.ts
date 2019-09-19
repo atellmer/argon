@@ -394,8 +394,8 @@ let isDirectiveMounted = false;
 function transformTemplateStringToVirtualDOM(str: TemplateStringsArray, ...args: Array<any>): VirtualNodeType | Array<VirtualNodeType> {
   const separator = NODE_SEPARATOR;
   let markup = str.join(separator);
-  let sourceVNode: VirtualNodeType | Array<VirtualNodeType> = null;
-  let vNode: VirtualNodeType | Array<VirtualNodeType> = null;
+  let sourceVNodeList: Array<VirtualNodeType> = null;
+  let vNodeList: Array<VirtualNodeType> = null;
   const currentRoute = getCurrentMountedRoute();
   const uid = getUIDActive();
   const app = getRegistery().get(uid);
@@ -444,30 +444,28 @@ function transformTemplateStringToVirtualDOM(str: TemplateStringsArray, ...args:
   };
 
   args.forEach(mapArgsFn);
-
   elements.push({ type: QUEUE_EVENTS, value: eventMap });
-  sourceVNode = createVirtualDOMFromSource(markup);
-  sourceVNode = sourceVNode.length > 1 ? sourceVNode : sourceVNode[0];
+  sourceVNodeList = createVirtualDOMFromSource(markup);
+  const mapNodeRoutes = (vNode: VirtualNodeType, idx: number) =>
+    buildVirtualNodeWithRoutes(vNode, currentRoute, currentRoute.length, idx, isDirectiveMounted);
+  const mapNodes = (vNode: VirtualNodeType) => mountVirtualDOM(vNode, elements);
+  const mapNodeListRoutes = (vNode: VirtualNodeType | Array<VirtualNodeType>, idx: number) => {
+    if (isArray(vNode)) {
+      const list = (vNode as Array<VirtualNodeType>)
+        .map((transitVNode, idx) => buildVirtualNodeWithRoutes(transitVNode, currentRoute, currentRoute.length, idx, isDirectiveMounted));
 
-  if (isArray(sourceVNode)) {
-    const transitVNodeList = (sourceVNode as Array<VirtualNodeType>)
-      .map((transitVNode, idx) => buildVirtualNodeWithRoutes(transitVNode, currentRoute, currentRoute.length, idx));
-    vNode = mountVirtualDOMList(transitVNodeList, elements);
-  } else {
-    const transitVNode = sourceVNode as VirtualNodeType;
-
-    sourceVNode = buildVirtualNodeWithRoutes(transitVNode, currentRoute, currentRoute.length, 0, isDirectiveMounted);
-    vNode = mountVirtualDOM(sourceVNode as VirtualNodeType, elements);
-
-    if (!isArray(vNode)) {
-      const transitVNode = vNode as VirtualNodeType;
-
-      vNode = buildVirtualNodeWithRoutes(transitVNode, currentRoute, currentRoute.length, 0, isDirectiveMounted);
+      return flatten(list);
     }
-  }
 
+    return buildVirtualNodeWithRoutes(vNode as VirtualNodeType, currentRoute, currentRoute.length, idx, isDirectiveMounted);
+  };
 
-  return vNode;
+  vNodeList = sourceVNodeList
+    .map(mapNodeRoutes)
+    .map(mapNodes)
+    .map(mapNodeListRoutes) as Array<VirtualNodeType>;
+
+  return vNodeList.length > 1 ? vNodeList : vNodeList[0];
 }
 
 function mountVirtualDOM(
@@ -643,35 +641,6 @@ function mountVirtualDOM(
   children.forEach(mapChildNodesFn);
 
   return mountedVNode;
-}
-
-function mountVirtualDOMList(
-  vNode: Array<VirtualNodeType>,
-  elements: Array<ElementReplacerType<any>>,
-): Array<VirtualNodeType> {
-  const vNodeList = vNode as Array<VirtualNodeType>;
-  const replacers = [
-    INSERT_DIRECTIVE_REPLACER,
-    REPEAT_DIRECTIVE_REPLACER,
-    STATELESS_COMPONENT_REPLACER,
-    STATEFULL_COMPONENT_REPLACER,
-  ];
-  const transitList = [...vNodeList];
-  const mapVNodeFn = (vNode: VirtualNodeType) => {
-    if (vNode.type === VDOM_ELEMENT_TYPES.COMMENT && replacers.includes(vNode.content)) {
-      const findContentFn = (comparedVNode: VirtualNodeType) => comparedVNode.content === vNode.content;
-      const idx = transitList.findIndex(findContentFn);
-      const mountedVNode = mountVirtualDOM(vNode, elements) as VirtualNodeType;
-
-      transitList[idx] = mountedVNode;
-    }
-  };
-  const mapTransitVNodeFn = vNode => (vNode = mountVirtualDOM(vNode, elements));
-
-  vNodeList.forEach(mapVNodeFn);
-  transitList.forEach(mapTransitVNodeFn);
-
-  return transitList;
 }
 
 function isVirtualNode(node: any) {
