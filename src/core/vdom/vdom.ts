@@ -497,6 +497,7 @@ function mountVirtualDOM(
       const nextVNode = insertDirective.createElement();
 
       isDirectiveMounted = false;
+      elements.splice(elementIdx, 1);
 
       if (parentVNode) {
         const list = (isArray(nextVNode) ? [...nextVNode] : [nextVNode]) as Array<VirtualNodeType>;
@@ -566,7 +567,6 @@ function mountVirtualDOM(
         return vNodeList;
       }
     } else if (textContent === LIST_REPLACER) {
-      isDirectiveMounted = true;
       const findElementFn = (e: ElementReplacerType<VirtualNodeType>) => e.type === LIST;
       const findVNodeFn = (vNode: VirtualNodeType) =>
         vNode.type === VDOM_ELEMENT_TYPES.COMMENT && vNode.content === LIST_REPLACER;
@@ -576,6 +576,7 @@ function mountVirtualDOM(
       const lastRouteIdx = mountedVNode.route[mountedVNode.route.length - 1];
       const slicedRoute = mountedVNode.route.slice(0, -1);
       const mapListItemFn = (item: any, idx: number) => {
+        isDirectiveMounted = true;
         const route = [...slicedRoute, lastRouteIdx + idx];
         setCurrentMountedRoute(route);
         return transformTemplateStringToVirtualDOM`${item}`;

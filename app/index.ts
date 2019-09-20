@@ -1,4 +1,12 @@
 import * as Argon from '../src';
+import {
+  dom,
+  repeat,
+  insert,
+  createComponent,
+  renderComponent,
+} from '../src';
+
 
 // const getAttrs = props => {
 //   const propsNameMap = {
@@ -84,7 +92,11 @@ import * as Argon from '../src';
 // }, 2000);
 
 
-
+const Portal = Argon.createComponent(({ isOpen }) => {
+  return Argon.dom`
+    <div>Portal: ${isOpen ? 'open' : 'close'}</div>
+  `
+});
 const Item = Argon.createComponent(({ x }) => {
   return Argon.dom`<div>${x}</div>`;
 });
@@ -94,32 +106,55 @@ const ListLevelThree = Argon.createComponent(() => {
 const ListLevelTwo = Argon.createComponent(() => {
   return Argon.dom`${Argon.repeat([11, 22, 33], x => ListLevelThree({ key: x }))}`;
 });
-const ListLevelOne = Argon.createComponent(() => {
-  return Argon.dom`${Argon.repeat([1, 2], x => ListLevelTwo({ key: x }))}`;
-});
-const Portal = Argon.createComponent(({ isOpen }) => {
-  return Argon.dom`
-    <div>Portal: ${isOpen ? 'open' : 'close'}</div>
-  `
-});
-const App = Argon.createComponent(({ isOpen }) => {
+const ListLevelOne = Argon.createComponent(({ isOpen }) => {
   Argon.renderComponent(Portal({ isOpen }), document.getElementById('portal'));
 
-  return Argon.dom`
-    <div>
-      ${isOpen && Argon.repeat(Array(10).fill(0), (x, idx) => Argon.dom`<div>${idx}</div>`)}
-    </div>
-  `;
+  return Argon.dom`${Argon.repeat([1, 2], x => ListLevelTwo({ key: x }))}`;
 });
 
-Argon.renderComponent(App({ isOpen: true }), document.getElementById('app'));
+///////////////////////
+const TableRoot = createComponent(({ width, child }) => dom`
+  <table style="width: ${width}">${child}</table>
+`);
 
-setTimeout(() => {
-  Argon.renderComponent(App({ isOpen: false }), document.getElementById('app'));
-}, 5000)
+const TableHeader = createComponent(({  }) => dom`
+  <thead>
+    <tr>
+      <th style="width: 33.3333%">name</th>
+      <th style="width: 33.3333%">age</th>
+      <th style="width: 33.3333%">iq</th>
+    </tr>
+  </thead>
+`);
 
-setTimeout(() => {
-  Argon.renderComponent(App({ isOpen: true }), document.getElementById('app'));
-}, 10000)
+const TableBody = createComponent(({ child }) => dom`
+  <tbody>
+    ${child}
+  </tbody>
+`);
 
+const Table = {
+  Root: TableRoot,
+  Header: TableHeader,
+  Body: TableBody,
+};
 
+const App = createComponent(() => {
+  const rows = [1, 2, 3];
+  const cols = [1, 2, 3];
+  return dom`
+    ${Table.Root({ width: '100%', child: [
+        Table.Header(),
+        Table.Body({ child: repeat(rows, r => dom`
+            <tr>${repeat(cols, c => dom`<td>${r}:${c}</td>`)}</tr>
+          `),
+        }),
+      ],
+    })
+  }`;
+});
+
+renderComponent(App({ isOpen: true }), document.getElementById('app'));
+
+// bug with [0,0,0]
+// error ids in nested

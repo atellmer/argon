@@ -78,6 +78,7 @@ function renderComponent(
     }
 
     vNode = createRootVirtualNode(vNode);
+    console.log('vNode: ', vNode)
     app.queue.push(() => makeEvents(vNode, zoneId));
     app.vdom = vNode;
     Array.from(mount(vNode).childNodes).forEach(node => container.appendChild(node));
